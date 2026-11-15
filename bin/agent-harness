@@ -1,0 +1,23 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+$autoloaders = [
+    __DIR__ . '/../vendor/autoload.php',
+    __DIR__ . '/../../../autoload.php',
+];
+
+foreach ($autoloaders as $autoloader) {
+    if (is_file($autoloader)) {
+        require $autoloader;
+        break;
+    }
+}
+
+if (!class_exists(Desemax\AgentHarness\Application::class)) {
+    fwrite(STDERR, "Autoloader not found. Run composer install.\n");
+    exit(1);
+}
+
+exit((new Desemax\AgentHarness\Application())->run());
