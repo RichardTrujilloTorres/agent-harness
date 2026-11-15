@@ -292,3 +292,12 @@ it('lists exactly the global options in the CLI reference', function (): void {
 it('shows the real version in the documented --version output', function (): void {
     expect(docs()->page('reference/cli.md'))->toContain(Application::NAME . ' ' . Application::VERSION);
 });
+
+it('mirrors SECURITY.md on the security policy page', function (): void {
+    $policy = docs()->page('security/policy.md');
+    $source = (string) file_get_contents(projectRoot() . '/SECURITY.md');
+    $policyBody = substr($policy, (int) strpos($policy, '## '));
+    $sourceBody = str_replace('](docs/security/threat-model.md)', '](threat-model.md)', substr($source, (int) strpos($source, '## ')));
+
+    expect($policyBody)->toBe($sourceBody);
+});
