@@ -16,15 +16,22 @@ use Desemax\AgentHarness\Llm\LlmClient;
 use Desemax\AgentHarness\Llm\LlmConfig;
 use Desemax\AgentHarness\Llm\LlmException;
 use Desemax\AgentHarness\Llm\OpenAiCompatibleClient;
+use Desemax\AgentHarness\Report\HtmlReport;
+use Desemax\AgentHarness\Report\JunitReport;
+use Desemax\AgentHarness\Report\ReportWriter;
+use Desemax\AgentHarness\Report\TranscriptReport;
 use Desemax\AgentHarness\Runner\ExpectationStatus;
 use Desemax\AgentHarness\Runner\ScenarioResult;
 use Desemax\AgentHarness\Runner\ScenarioRunner;
+use Desemax\AgentHarness\Runner\ScenarioStatus;
+use Desemax\AgentHarness\Runner\SuiteResult;
 use Desemax\AgentHarness\Runner\SuiteRunner;
 use Desemax\AgentHarness\Scenario\ExpectationType;
 use Desemax\AgentHarness\Scenario\Scenario;
 use Desemax\AgentHarness\Scenario\ScenarioLoader;
 use Desemax\AgentHarness\Scenario\UserMode;
 use InvalidArgumentException;
+use RuntimeException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -71,6 +78,9 @@ final class RunCommand extends Command
             ->addOption('config', null, InputOption::VALUE_REQUIRED, 'Config file (default: ./' . ConfigLoader::DEFAULT_FILE . ' if present)')
             ->addOption('filter', null, InputOption::VALUE_REQUIRED, 'Only run scenarios whose name contains this text (case-insensitive)')
             ->addOption('seed', null, InputOption::VALUE_REQUIRED, 'Seed passed to the LLM for the LLM-played user and the judge')
+            ->addOption('report-html', null, InputOption::VALUE_REQUIRED, 'Write a self-contained HTML report to this file')
+            ->addOption('report-junit', null, InputOption::VALUE_REQUIRED, 'Write a JUnit XML report to this file')
+            ->addOption('transcripts', null, InputOption::VALUE_REQUIRED, 'Write one JSON transcript per scenario into this directory')
             ->addOption('retries', null, InputOption::VALUE_REQUIRED, 'Re-run a failed or errored scenario up to this many times; passing on a retry is reported FLAKY', '0')
             ->setHelp(<<<'HELP'
                 Exit codes:
@@ -93,6 +103,17 @@ final class RunCommand extends Command
         $seed = self::intOption($input->getOption('seed'));
         if ($input->getOption('seed') !== null && $seed === null) {
             return $this->fail($output, '--seed must be an integer.');
+        }
+        $reports = [];
+        foreach (['report-html', 'report-junit', 'transcripts'] as $option) {
+            $value = $input->getOption($option);
+            if ($value === null) {
+                continue;
+            }
+            if (!is_string($value) || trim($value) === '') {
+                return $this->fail($output, sprintf('--%s needs a path.', $option));
+            }
+            $reports[$option] = $value;
         }
         $retries = self::intOption($input->getOption('retries'));
         if ($retries === null || $retries < 0) {
@@ -154,7 +175,40 @@ final class RunCommand extends Command
 
         $runner = new SuiteRunner(new ScenarioRunner(EvaluatorRegistry::withLlm($llm, $seed), llm: $llm, seed: $seed), $retries);
 
-        return $this->runAll($scenarios, $runner, new HttpAgentAdapter($config), $output);
+        $suite = $this->runAll($scenarios, $runner, new HttpAgentAdapter($config), $output);
+
+        try {
+            $this->writeReports($suite, $reports, $output);
+        } catch (RuntimeException $e) {
+            return $this->fail($output, $e->getMessage());
+        }
+
+        return match (true) {
+            $suite->count(ScenarioStatus::Error) > 0 => self::EXIT_AGENT_ERROR,
+            $suite->count(ScenarioStatus::Failed) > 0 => self::EXIT_FAILED,
+            default => self::EXIT_PASSED,
+        };
+    }
+
+    /**
+     * @param array<string, string> $reports option name => path
+     *
+     * @throws RuntimeException when a file cannot be written
+     */
+    private function writeReports(SuiteResult $suite, array $reports, OutputInterface $output): void
+    {
+        if (isset($reports['report-html'])) {
+            ReportWriter::write($reports['report-html'], (new HtmlReport())->render($suite));
+            $output->writeln('HTML report: ' . $reports['report-html']);
+        }
+        if (isset($reports['report-junit'])) {
+            ReportWriter::write($reports['report-junit'], (new JunitReport())->render($suite));
+            $output->writeln('JUnit report: ' . $reports['report-junit']);
+        }
+        if (isset($reports['transcripts'])) {
+            $paths = (new TranscriptReport())->write($suite, $reports['transcripts']);
+            $output->writeln(sprintf('Transcripts: %d file(s) in %s', count($paths), $reports['transcripts']));
+        }
     }
 
     private static function intOption(mixed $value): ?int
@@ -191,7 +245,7 @@ final class RunCommand extends Command
     /**
      * @param list<Scenario> $scenarios
      */
-    private function runAll(array $scenarios, SuiteRunner $runner, AgentAdapter $agent, OutputInterface $output): int
+    private function runAll(array $scenarios, SuiteRunner $runner, AgentAdapter $agent, OutputInterface $output): SuiteResult
     {
         $suite = $runner->run($scenarios, $agent, fn (ScenarioResult $result) => $this->print($result, $output));
         $counts = $suite->counts();
@@ -208,11 +262,7 @@ final class RunCommand extends Command
             $suite->durationMs,
         ));
 
-        return match (true) {
-            $counts['error'] > 0 => self::EXIT_AGENT_ERROR,
-            $counts['failed'] > 0 => self::EXIT_FAILED,
-            default => self::EXIT_PASSED,
-        };
+        return $suite;
     }
 
     private function print(ScenarioResult $result, OutputInterface $output): void

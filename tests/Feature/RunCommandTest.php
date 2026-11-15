@@ -46,6 +46,39 @@ describe('against the demo agent', function (): void {
             ->and($display)->not->toContain('Transcript:');
     });
 
+    it('writes the HTML, JUnit and transcript reports', function (): void {
+        $dir = sys_get_temp_dir() . '/agent-harness-reports-' . bin2hex(random_bytes(4));
+        $tester = runScenarios(projectRoot() . '/examples/scenarios', [
+            '--url' => $this->server->url('/chat'),
+            '--report-html' => $dir . '/report.html',
+            '--report-junit' => $dir . '/junit/report.xml',
+            '--transcripts' => $dir . '/transcripts',
+        ]);
+
+        $junit = new DOMDocument();
+        $junit->load($dir . '/junit/report.xml');
+        $transcripts = glob($dir . '/transcripts/*.json') ?: [];
+        sort($transcripts);
+
+        expect($tester->getStatusCode())->toBe(1)
+            ->and($tester->getDisplay())->toContain('HTML report: ' . $dir . '/report.html')
+            ->and($tester->getDisplay())->toContain('JUnit report: ' . $dir . '/junit/report.xml')
+            ->and($tester->getDisplay())->toContain('Transcripts: 6 file(s) in ' . $dir . '/transcripts')
+            ->and((string) file_get_contents($dir . '/report.html'))->toContain('Allergen question is not answered with invented claims')
+            ->and($junit->getElementsByTagName('testcase')->length)->toBe(6)
+            ->and($junit->getElementsByTagName('failure')->length)->toBe(2)
+            ->and(array_map('basename', $transcripts))->toBe([
+                'allergen-question-is-not-answered-with-invented-claims.json',
+                'happy-path-booking.json',
+                'large-party-goes-to-staff.json',
+                'missing-details-agent-asks-for-the-name.json',
+                'opening-hours-question.json',
+                'request-for-a-human.json',
+            ]);
+
+        exec('rm -rf ' . escapeshellarg($dir));
+    });
+
     it('runs only the filtered scenario and exits 0', function (): void {
         $tester = runScenarios(projectRoot() . '/examples/scenarios', ['--url' => $this->server->url('/chat'), '--filter' => 'happy']);
 
@@ -127,6 +160,7 @@ it('exits 2 on bad input', function (array $options, string $message, string $pa
     'bad url' => [['--url' => 'localhost:8787'], '--url must start with http:// or https://'],
     'missing config' => [['--config' => '/nonexistent/harness.yaml'], 'Config file does not exist: /nonexistent/harness.yaml'],
     'filter matches nothing' => [['--url' => 'http://x/chat', '--filter' => 'zzz'], 'No scenario name contains "zzz".'],
+    'empty report path' => [['--url' => 'http://x/chat', '--report-html' => ' '], '--report-html needs a path.'],
 ]);
 
 it('exits 2 and lists config errors', function (): void {
@@ -220,12 +254,12 @@ it('passes the seed to the LLM', function (): void {
 it('reports a flaky scenario, counts it as a pass and exits 0', function (): void {
     $server = AgentServer::start(fixture('flaky-agent'));
     $counter = sys_get_temp_dir() . '/agent-harness-flaky-' . $server->port;
-    @unlink($counter);
+    is_file($counter) && unlink($counter);
     try {
         $tester = runScenarios(fixture('flaky-agent/scenarios'), ['--url' => $server->url('/'), '--retries' => '2']);
     } finally {
         $server->stop();
-        @unlink($counter);
+        is_file($counter) && unlink($counter);
     }
     $display = $tester->getDisplay();
 
