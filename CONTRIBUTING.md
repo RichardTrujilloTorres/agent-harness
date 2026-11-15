@@ -30,3 +30,7 @@ Use small, topical commits with Conventional Commits subjects: `type(scope): sub
 Do not add co-author trailers, generated-by lines, or other AI attribution.
 
 The harness stays framework-free: Symfony Console, Yaml and HttpClient are the only runtime dependencies. Please open an issue to discuss larger changes such as new adapters before writing them.
+
+## Known local issue
+
+Homebrew PHP 8.4.20 on macOS can exit with code 11 and no output during Composer network calls. `composer deps:audit` retries only an empty-output exit 11 or 139 with the curl-multi functions disabled. Audit findings and every other failure are returned unchanged and fail the gate.
