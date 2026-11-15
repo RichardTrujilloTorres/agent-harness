@@ -9,4 +9,4 @@
 - [ ] No ignore comments, baselines, suppressions, skipped tests or lowered thresholds
 - [ ] `README.md` and `CHANGELOG.md` (under Unreleased) updated if behaviour or options changed
 - [ ] JSON schemas in `schema/` updated if the scenario or config format changed
-- [ ] Commit messages are plain, with no generated-by or co-author lines
+- [ ] Commit subjects follow `type(scope): subject`, for example `feat(runner): add retry support` or `fix(security): redact secrets in reports`; `composer commits` passes and messages have no generated-by or co-author lines

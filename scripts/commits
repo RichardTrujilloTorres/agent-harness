@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root="$(git rev-list --max-parents=0 HEAD)"
+git show -s --format=%B "$root" | npx --no-install commitlint
+if [[ "$(git rev-list --count "$root"..HEAD)" -gt 0 ]]; then
+  npx --no-install commitlint --from "$root" --to HEAD
+fi

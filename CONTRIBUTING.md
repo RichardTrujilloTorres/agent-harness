@@ -25,6 +25,8 @@ The same gates are available individually as Composer scripts and as `make` targ
 
 ## Commits and scope
 
-Use small, topical commits with plain messages. Do not add co-author trailers, generated-by lines, or other AI attribution.
+Use small, topical commits with Conventional Commits subjects: `type(scope): subject`. Use a lowercase imperative subject of at most 72 characters, with no trailing period. For example: `feat(runner): add retry support` or `fix(security): redact secrets in reports`. Run `composer commits` to lint the full history; it is also part of `composer check` and CI.
+
+Do not add co-author trailers, generated-by lines, or other AI attribution.
 
 The harness stays framework-free: Symfony Console, Yaml and HttpClient are the only runtime dependencies. Please open an issue to discuss larger changes such as new adapters before writing them.

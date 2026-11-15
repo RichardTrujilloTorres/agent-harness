@@ -73,6 +73,7 @@
         "arch": "pest tests/Arch",
         "audit": "@composer audit",
         "check": [
+            "@commits",
             "@lint",
             "@stan",
             "@rector",
@@ -89,6 +90,7 @@
             "@phar",
             "@phar:check"
         ],
+        "commits": "bash scripts/commits",
         "coverage": [
             "@putenv XDEBUG_MODE=coverage",
             "pest --coverage --min=95"
@@ -127,6 +129,7 @@
         "arch": "Architecture tests",
         "audit": "Check dependencies for security advisories",
         "check": "Every gate, in order",
+        "commits": "Lint every commit message from the root commit",
         "coverage": "Tests with line coverage, at least 95 %",
         "demo": "Start the demo agent on http://127.0.0.1:8787/chat",
         "demo:check": "Run the examples against the demo agent: 4 passed, 2 failed, exit 1",
