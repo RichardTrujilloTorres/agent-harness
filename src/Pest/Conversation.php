@@ -9,14 +9,20 @@ use Desemax\AgentHarness\Agent\HttpAgentAdapter;
 use Desemax\AgentHarness\Assertion\EvaluatorRegistry;
 use Desemax\AgentHarness\Config\ConfigLoader;
 use Desemax\AgentHarness\Config\HarnessConfig;
+use Desemax\AgentHarness\Config\InvalidConfigException;
 use Desemax\AgentHarness\Llm\LlmClient;
+use Desemax\AgentHarness\Llm\LlmConfig;
+use Desemax\AgentHarness\Llm\LlmException;
 use Desemax\AgentHarness\Llm\OpenAiCompatibleClient;
 use Desemax\AgentHarness\Runner\ScenarioResult;
 use Desemax\AgentHarness\Runner\ScenarioRunner;
 use Desemax\AgentHarness\Scenario\ExpectationType;
+use Desemax\AgentHarness\Scenario\InvalidScenarioException;
 use Desemax\AgentHarness\Scenario\Scenario;
 use Desemax\AgentHarness\Scenario\ScenarioLoader;
 use Desemax\AgentHarness\Scenario\UserMode;
+use Desemax\AgentHarness\Security\BoundedHttp;
+use Desemax\AgentHarness\Security\Redactor;
 use InvalidArgumentException;
 
 /**
@@ -84,9 +90,9 @@ final class Conversation
 
     /**
      * @throws InvalidArgumentException when the scenario, config or agent cannot be used
-     * @throws \Desemax\AgentHarness\Scenario\InvalidScenarioException when the scenario file is invalid
-     * @throws \Desemax\AgentHarness\Config\InvalidConfigException when the config file is invalid
-     * @throws \Desemax\AgentHarness\Llm\LlmException when the LLM API key variable is not set
+     * @throws InvalidScenarioException when the scenario file is invalid
+     * @throws InvalidConfigException when the config file is invalid
+     * @throws LlmException when the LLM API key variable is not set
      */
     public function run(): ScenarioResult
     {
@@ -95,7 +101,7 @@ final class Conversation
 
         $agent = $this->agent;
         if (is_string($agent)) {
-            if (preg_match('#^https?://#i', $agent) !== 1) {
+            if (!BoundedHttp::isHttpUrl($agent)) {
                 throw new InvalidArgumentException(sprintf('against() needs a URL starting with http:// or https://, got "%s".', $agent));
             }
             $config = $config->withUrl($agent);
@@ -107,12 +113,20 @@ final class Conversation
             $agent = new HttpAgentAdapter($config);
         }
 
+        $secrets = array_values($config->headers);
         $llm = $this->llm;
-        if (!$llm instanceof \Desemax\AgentHarness\Llm\LlmClient && $config->llm instanceof \Desemax\AgentHarness\Llm\LlmConfig && $this->needsLlm($scenario)) {
-            $llm = OpenAiCompatibleClient::fromConfig($config->llm);
+        if ($config->llm instanceof LlmConfig) {
+            $key = getenv($config->llm->apiKeyEnv);
+            $secrets[] = is_string($key) ? $key : '';
+            if (!$llm instanceof LlmClient && $this->needsLlm($scenario)) {
+                $llm = OpenAiCompatibleClient::fromConfig($config->llm);
+            }
         }
 
-        return (new ScenarioRunner(EvaluatorRegistry::withLlm($llm, $this->seed), llm: $llm, seed: $this->seed))->run($scenario, $agent);
+        // Header values and the API key never reach failure messages or the test output.
+        return (new Redactor($secrets))->result(
+            (new ScenarioRunner(EvaluatorRegistry::withLlm($llm, $this->seed), llm: $llm, seed: $this->seed))->run($scenario, $agent),
+        );
     }
 
     private function scenario(): Scenario

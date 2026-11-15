@@ -21,16 +21,20 @@ final readonly class SuiteRunner
     /**
      * @param list<Scenario> $scenarios
      * @param ?Closure(ScenarioResult): void $onResult called after each scenario's final result
+     * @param bool $failFast stop after the first scenario that fails or errors (after its retries)
      */
-    public function run(array $scenarios, AgentAdapter $agent, ?Closure $onResult = null): SuiteResult
+    public function run(array $scenarios, AgentAdapter $agent, ?Closure $onResult = null, bool $failFast = false): SuiteResult
     {
         $start = hrtime(true);
         $results = [];
         foreach ($scenarios as $scenario) {
             $result = $this->runOne($scenario, $agent);
             $results[] = $result;
-            if ($onResult instanceof \Closure) {
+            if ($onResult instanceof Closure) {
                 $onResult($result);
+            }
+            if ($failFast && $result->status->isFailure()) {
+                break;
             }
         }
 

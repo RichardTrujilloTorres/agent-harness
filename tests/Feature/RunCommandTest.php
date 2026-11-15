@@ -158,10 +158,10 @@ it('exits 2 on bad input', function (array $options, string $message, string $pa
 })->with([
     'missing path' => [['--url' => 'http://x/chat'], 'Path does not exist', 'nope'],
     'no url' => [[], 'No agent URL: pass --url or set agent.url'],
-    'bad url' => [['--url' => 'localhost:8787'], '--url must start with http:// or https://'],
+    'bad url' => [['--url' => 'localhost:8787'], '--url must be an http:// or https:// URL with a host, got "localhost:8787".'],
     'missing config' => [['--config' => '/nonexistent/harness.yaml'], 'Config file does not exist: /nonexistent/harness.yaml'],
-    'filter matches nothing' => [['--url' => 'http://x/chat', '--filter' => 'zzz'], 'No scenario name contains "zzz".'],
-    'empty report path' => [['--url' => 'http://x/chat', '--report-html' => ' '], '--report-html needs a path.'],
+    'filter matches nothing' => [['--url' => 'http://x/chat', '--filter' => 'zzz'], 'No scenario name contains "zzz". Run "agent-harness list'],
+    'empty report path' => [['--url' => 'http://x/chat', '--report-html' => ' '], '--report-html needs a path, for example --report-html=build/report.html.'],
 ]);
 
 it('exits 2 and lists config errors', function (): void {
@@ -279,7 +279,7 @@ it('rejects bad --seed and --retries values', function (array $options, string $
 
     expect($tester->getStatusCode())->toBe(2)->and($tester->getDisplay())->toContain($message);
 })->with([
-    'seed' => [['--seed' => 'abc'], '--seed must be an integer.'],
-    'retries negative' => [['--retries' => '-1'], '--retries must be an integer >= 0.'],
-    'retries text' => [['--retries' => 'two'], '--retries must be an integer >= 0.'],
+    'seed' => [['--seed' => 'abc'], '--seed must be an integer, got "abc".'],
+    'retries negative' => [['--retries' => '-1'], '--retries must be an integer >= 0, got "-1".'],
+    'retries text' => [['--retries' => 'two'], '--retries must be an integer >= 0, got "two".'],
 ]);

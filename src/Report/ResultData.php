@@ -23,7 +23,8 @@ final class ResultData
      *     attempts: int,
      *     duration_ms: int,
      *     turns: list<array{number: int, user: string, agent: string, tool_calls: list<array{name: string, arguments: array<string, mixed>}>, handoff: bool, latency_ms: int}>,
-     *     expectations: list<array{type: string, expected: mixed, status: string, reason: string}>
+     *     expectations: list<array{type: string, expected: mixed, status: string, reason: string}>,
+     *     warnings: list<string>
      * }
      */
     public static function scenario(ScenarioResult $result): array
@@ -37,6 +38,7 @@ final class ResultData
             'duration_ms' => $result->durationMs,
             'turns' => array_map(self::turn(...), $result->transcript->turns),
             'expectations' => array_map(self::expectation(...), $result->expectations),
+            'warnings' => $result->warnings,
         ];
     }
 
