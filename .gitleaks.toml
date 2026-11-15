@@ -1,0 +1,5 @@
+# gitleaks configuration: the default rule set, nothing disabled and no allowlist.
+title = "agent-harness"
+
+[extend]
+useDefault = true

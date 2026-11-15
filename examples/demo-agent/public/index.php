@@ -12,6 +12,8 @@
  *
  * It contains two deliberate bugs (marked "intentional: demo failure") so that
  * two of the example scenarios fail and show what a failing run looks like.
+ *
+ * This is a demo, not a production service: bind it to 127.0.0.1 only.
  */
 
 declare(strict_types=1);
@@ -29,6 +31,8 @@ const NUMBER_WORDS = [
     'seven' => 7, 'eight' => 8, 'nine' => 9, 'ten' => 10, 'eleven' => 11, 'twelve' => 12,
 ];
 const DAYS = 'monday|tuesday|wednesday|thursday|friday|saturday|sunday|today|tomorrow';
+/** Largest request body accepted, in bytes. */
+const MAX_BODY_BYTES = 16_384;
 
 /**
  * @param array<string, mixed> $body
@@ -36,14 +40,31 @@ const DAYS = 'monday|tuesday|wednesday|thursday|friday|saturday|sunday|today|tom
 function respond(int $status, array $body): never
 {
     http_response_code($status);
-    header('Content-Type: application/json');
-    echo json_encode($body, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    header('Content-Type: application/json; charset=utf-8');
+    header('X-Content-Type-Options: nosniff');
+    echo jsonBody($body);
     exit;
 }
 
+/**
+ * JSON with <, >, &, ' and " escaped as \u00XX, so the body is inert even if a browser renders it as HTML.
+ *
+ * @param array<string, mixed> $body
+ *
+ * @psalm-taint-escape html
+ * @psalm-taint-escape has_quotes
+ */
+function jsonBody(array $body): string
+{
+    return (string) json_encode($body, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+}
+
+/**
+ * The session id is client input: only its hash is used in the file name.
+ */
 function statePath(string $sessionId): string
 {
-    return sys_get_temp_dir() . '/trattoria-demo-' . sha1($sessionId) . '.json';
+    return sys_get_temp_dir() . '/trattoria-demo-' . hash('sha256', $sessionId) . '.json';
 }
 
 /**
@@ -179,7 +200,7 @@ function handle(string $message, array $state): array
         'name' => extractName(trim($message), $asked === 'name'),
     ];
     $intent = preg_match('/\b(book|booking|reserve|reservation|table)\b/', $text) === 1;
-    $anyFound = array_filter($found, static fn($v): bool => $v !== null) !== [];
+    $anyFound = array_filter($found, static fn(int|string|null $v): bool => $v !== null) !== [];
 
     if (!$intent && !$anyFound) {
         if ($asked === null && preg_match('/^(hi|hello|hey|good (morning|afternoon|evening))\b/', $text) === 1) {
@@ -226,12 +247,28 @@ function handle(string $message, array $state): array
     return [$out, $reset];
 }
 
-$path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
-if ($path !== '/chat' || ($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+$path = parse_url(is_string($_SERVER['REQUEST_URI'] ?? null) ? $_SERVER['REQUEST_URI'] : '/', PHP_URL_PATH);
+if ($path !== '/chat') {
     respond(404, ['error' => 'Not found. Use POST /chat.']);
 }
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+    header('Allow: POST');
+    respond(405, ['error' => 'Method not allowed. Use POST /chat.']);
+}
+$contentType = is_string($_SERVER['CONTENT_TYPE'] ?? null) ? strtolower(trim(explode(';', $_SERVER['CONTENT_TYPE'])[0])) : '';
+if ($contentType !== 'application/json') {
+    respond(415, ['error' => 'Content-Type must be application/json.']);
+}
+$declared = $_SERVER['CONTENT_LENGTH'] ?? null;
+if (is_numeric($declared) && (int) $declared > MAX_BODY_BYTES) {
+    respond(413, ['error' => sprintf('Body larger than %d bytes.', MAX_BODY_BYTES)]);
+}
+$raw = file_get_contents('php://input', false, null, 0, MAX_BODY_BYTES + 1);
+if ($raw === false || strlen($raw) > MAX_BODY_BYTES) {
+    respond(413, ['error' => sprintf('Body larger than %d bytes.', MAX_BODY_BYTES)]);
+}
 
-$input = json_decode((string) file_get_contents('php://input'), true);
+$input = json_decode($raw, true);
 if (!is_array($input) || !is_string($input['session_id'] ?? null) || $input['session_id'] === '' || !is_string($input['message'] ?? null)) {
     respond(400, ['error' => 'Body must be JSON: {"session_id": string, "message": string}.']);
 }
