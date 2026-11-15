@@ -10,7 +10,6 @@ You need PHP 8.3 or later, Composer and Git. The package is not on Packagist. Cl
 git clone https://github.com/RichardTrujilloTorres/agent-harness
 cd agent-harness
 composer install
-export AGENT_HARNESS_PATH="$PWD"
 ```
 
 Keep the demo agent running in this terminal:
@@ -57,17 +56,17 @@ PASS   Opening hours question  (1 turn, 1 ms)
 
 The command exits with code 1. The failures are intentional: Trattoria Demo incorrectly claims that every dish is gluten-free and confirms a party of 12 instead of handing it to staff.
 
-On an Apple M1 Pro on 2026-11-15, the clean-clone path reached the first PASS in 54 seconds and the first intended FAIL in 54 seconds. This includes dependency installation and the local PHP workaround described in [Contributing](project/contributing.md).
+Measured on an Apple M1 Pro laptop, 2026-11-15: from `git clone` to the first PASS took 58 seconds, and the first intended FAIL followed in the same second. Most of that time is `composer install`, including one retry with the local workaround described in [Troubleshooting](troubleshooting.md).
 
 ## Create your own project
 
-Keep the demo running. In the second terminal, create an empty project next to the clone and install from the local path:
+Keep the demo running. In the second terminal, from the clone, create an empty project next to it and install the package from the clone through a Composer path repository:
 
 ```bash
 mkdir ../my-agent-tests
 cd ../my-agent-tests
 composer init --name=example/agent-tests --no-interaction
-composer config repositories.agent-harness path "$AGENT_HARNESS_PATH"
+composer config repositories.agent-harness path ../agent-harness
 composer require --dev desemax/agent-harness:dev-main
 vendor/bin/agent-harness init
 ```
@@ -88,7 +87,7 @@ PASS   Example conversation  (1 turn, 4 ms)
 1 scenario(s): 1 passed, 0 failed, 0 skipped, 0 errors in 4 ms
 ```
 
-The empty-project path reached this PASS in 8 seconds on the same machine and date.
+Measured on the same machine and date: from `mkdir` to this PASS took 44 seconds, including one `composer require` retry with the same workaround.
 
 ## Write a scenario
 
