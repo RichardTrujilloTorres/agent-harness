@@ -7,7 +7,6 @@ namespace Desemax\AgentHarness\Command;
 use Closure;
 use Desemax\AgentHarness\Agent\AgentAdapter;
 use Desemax\AgentHarness\Agent\HttpAgentAdapter;
-use Desemax\AgentHarness\Agent\ToolCall;
 use Desemax\AgentHarness\Assertion\EvaluatorRegistry;
 use Desemax\AgentHarness\Config\ConfigLoader;
 use Desemax\AgentHarness\Config\HarnessConfig;
@@ -298,22 +297,10 @@ final class RunCommand extends Command
 
         if ($verbose && $turns > 0) {
             $output->writeln('       Transcript:');
-            foreach ($result->transcript->turns as $turn) {
-                $output->writeln(sprintf('         %d. user:  %s', $turn->number, $turn->userMessage));
-                $output->writeln(sprintf('            agent: %s (%d ms)', $turn->reply->reply, $turn->reply->latencyMs));
-                foreach ($turn->reply->toolCalls as $call) {
-                    $output->writeln('            tool:  ' . self::toolCall($call));
-                }
-                if ($turn->reply->handoff) {
-                    $output->writeln('            handoff');
-                }
+            foreach ($result->transcript->lines() as $line) {
+                $output->writeln('         ' . $line);
             }
         }
-    }
-
-    private static function toolCall(ToolCall $call): string
-    {
-        return $call->name . ' ' . json_encode((object) $call->arguments, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
     /**

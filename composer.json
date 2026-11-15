@@ -13,17 +13,25 @@
         "pestphp/pest": "^3.0",
         "phpstan/phpstan": "^2.0"
     },
+    "suggest": {
+        "pestphp/pest": "Write conversation tests in your own Pest suite with conversation() and toPassScenario()"
+    },
     "autoload": {
         "psr-4": {
             "Desemax\\AgentHarness\\": "src/"
-        }
+        },
+        "files": [
+            "src/Pest/functions.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
             "Desemax\\AgentHarness\\Tests\\": "tests/"
         }
     },
-    "bin": ["bin/agent-harness"],
+    "bin": [
+        "bin/agent-harness"
+    ],
     "config": {
         "sort-packages": true,
         "allow-plugins": {

@@ -109,20 +109,9 @@ final class JunitReport
 
     private static function transcript(ScenarioResult $result): string
     {
-        $lines = [];
+        $lines = $result->transcript->lines();
         if ($result->message !== null) {
-            $lines[] = $result->message;
-        }
-        foreach ($result->transcript->turns as $turn) {
-            $data = ResultData::turn($turn);
-            $lines[] = sprintf('%d. user:  %s', $data['number'], $data['user']);
-            $lines[] = sprintf('   agent: %s (%d ms)', $data['agent'], $data['latency_ms']);
-            foreach ($data['tool_calls'] as $call) {
-                $lines[] = sprintf('   tool:  %s %s', $call['name'], json_encode((object) $call['arguments'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
-            }
-            if ($data['handoff']) {
-                $lines[] = '   handoff';
-            }
+            array_unshift($lines, $result->message);
         }
 
         return implode("\n", $lines);

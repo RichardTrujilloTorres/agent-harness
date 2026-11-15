@@ -69,6 +69,28 @@ final readonly class Transcript
         return $this->handoffTurn() !== null;
     }
 
+    /**
+     * Plain-text lines, e.g. "1. user:  Hi", "   agent: Hello (12 ms)", "   tool:  create_booking {...}", "   handoff".
+     *
+     * @return list<string>
+     */
+    public function lines(): array
+    {
+        $lines = [];
+        foreach ($this->turns as $turn) {
+            $lines[] = sprintf('%d. user:  %s', $turn->number, $turn->userMessage);
+            $lines[] = sprintf('   agent: %s (%d ms)', $turn->reply->reply, $turn->reply->latencyMs);
+            foreach ($turn->reply->toolCalls as $call) {
+                $lines[] = '   tool:  ' . $call->name . ' ' . json_encode((object) $call->arguments, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            }
+            if ($turn->reply->handoff) {
+                $lines[] = '   handoff';
+            }
+        }
+
+        return $lines;
+    }
+
     public function totalLatencyMs(): int
     {
         return array_sum(array_map(static fn (Turn $t): int => $t->reply->latencyMs, $this->turns));
