@@ -23,6 +23,7 @@ First release.
 - Demo restaurant booking agent with six example scenarios (two fail on purpose) and two LLM example scenarios.
 - Exit codes: 0 pass, 1 failures, 2 bad input, 3 errors.
 - `init` creates a commented config and example scenario without overwriting; `list` shows scenario modes and expectation counts.
+- Running `agent-harness` without a command prints the command overview.
 - Versioned JSON output for `validate` and `run`, `--fail-fast`, and did-you-mean suggestions for unknown fields and expectation types.
 - Draft 2020-12 JSON Schemas for scenarios and config, checked against the PHP validators and all YAML fixtures.
 - Prompt-injection hardening for the judge and LLM-played user, suspicious-reply warnings, secret redaction, safe HTTP/YAML limits, secure report and terminal output, and a hardened demo agent.
