@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use Desemax\AgentHarness\Application;
+use Desemax\AgentHarness\Command\RunCommand;
 use Desemax\AgentHarness\Tests\Support\AgentServer;
+use Desemax\AgentHarness\Tests\Support\FakeLlmClient;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Tester\CommandTester;
 
@@ -55,7 +57,7 @@ describe('against the demo agent', function (): void {
     it('prints expectation results and the transcript with -v', function (): void {
         $display = runScenarios(projectRoot() . '/examples/scenarios', ['--url' => $this->server->url('/chat'), '--filter' => 'allergen'], true)->getDisplay();
 
-        expect($display)->toContain('~ judge: skipped (LLM judge not available yet)')
+        expect($display)->toContain('~ judge: skipped (no llm configured in harness.yaml)')
             ->and($display)->toContain('Transcript:')
             ->and($display)->toContain('1. user:  Are your dishes safe for someone with coeliac disease?')
             ->and($display)->toContain('agent: Yes, all our dishes are gluten-free.');
@@ -152,4 +154,51 @@ it('reads ./harness.yaml from the working directory by default', function (): vo
 
     expect($tester->getStatusCode())->toBe(0)
         ->and($tester->getDisplay())->toContain('PASS   Order status through remapped fields');
+});
+
+describe('with an llm section', function (): void {
+    beforeEach(function (): void {
+        $this->server = AgentServer::start(projectRoot() . '/examples/demo-agent/public');
+    });
+
+    afterEach(function (): void {
+        $this->server->stop();
+    });
+
+    it('plays the LLM user and asks the judge through the configured client', function (): void {
+        $llm = new FakeLlmClient(['When are you open?', '[[DONE]]', '{"pass": true, "reason": "Gives the hours."}']);
+        $tester = new CommandTester(new RunCommand(llmFactory: static fn (): FakeLlmClient => $llm));
+        $tester->execute([
+            'path' => fixture('llm/scenarios'),
+            '--config' => fixture('llm/harness.yaml'),
+            '--url' => $this->server->url('/chat'),
+        ], ['verbosity' => OutputInterface::VERBOSITY_VERBOSE]);
+        $display = $tester->getDisplay();
+
+        expect($tester->getStatusCode())->toBe(0)
+            ->and($display)->toMatch('/^PASS   LLM user asks for the opening hours  \(1 turn, \d+ ms\)$/m')
+            ->and($display)->toContain('1. user:  When are you open?')
+            ->and($display)->toContain('✓ judge "The agent gives the opening hours without inventing anything.": pass: Gives the hours.')
+            ->and($llm->remaining())->toBe(0);
+    });
+
+    it('exits 2 with a clear message when the API key variable is not set', function (): void {
+        putenv('HARNESS_TEST_UNSET_KEY');
+        $tester = runScenarios(fixture('llm/scenarios'), ['--config' => fixture('llm/harness.yaml'), '--url' => $this->server->url('/chat')]);
+
+        expect($tester->getStatusCode())->toBe(2)
+            ->and($tester->getDisplay())->toContain('Environment variable HARNESS_TEST_UNSET_KEY is not set.')
+            ->and($tester->getDisplay())->not->toContain('Exception');
+    });
+
+    it('does not need the API key when no scenario uses the LLM', function (): void {
+        putenv('HARNESS_TEST_UNSET_KEY');
+        $tester = runScenarios(projectRoot() . '/examples/scenarios', [
+            '--config' => fixture('llm/harness.yaml'),
+            '--url' => $this->server->url('/chat'),
+            '--filter' => 'happy',
+        ]);
+
+        expect($tester->getStatusCode())->toBe(0);
+    });
 });

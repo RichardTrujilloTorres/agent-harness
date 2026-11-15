@@ -8,6 +8,7 @@ use Closure;
 use Desemax\AgentHarness\Agent\AgentAdapter;
 use Desemax\AgentHarness\Agent\HttpAgentAdapter;
 use Desemax\AgentHarness\Agent\ToolCall;
+use Desemax\AgentHarness\Assertion\EvaluatorRegistry;
 use Desemax\AgentHarness\Config\ConfigLoader;
 use Desemax\AgentHarness\Config\HarnessConfig;
 use Desemax\AgentHarness\Config\InvalidConfigException;
@@ -73,7 +74,7 @@ final class RunCommand extends Command
                   0  no failures (skipped scenarios allowed)
                   1  at least one scenario failed
                   2  bad path, bad config or invalid scenarios
-                  3  at least one scenario errored (agent unreachable or bad response)
+                  3  at least one scenario errored (agent or LLM unreachable, bad response, judge without a usable answer)
                 HELP);
     }
 
@@ -140,7 +141,7 @@ final class RunCommand extends Command
             }
         }
 
-        $runner = new ScenarioRunner(llm: $llm);
+        $runner = new ScenarioRunner(EvaluatorRegistry::withLlm($llm), llm: $llm);
 
         return $this->runAll($scenarios, $runner, new HttpAgentAdapter($config), $output);
     }
@@ -217,6 +218,8 @@ final class RunCommand extends Command
         foreach ($result->expectations as $expectation) {
             if ($expectation->status === ExpectationStatus::Failed) {
                 $output->writeln('       ✗ ' . $expectation->reason);
+            } elseif ($expectation->status === ExpectationStatus::Error) {
+                $output->writeln('       ! ' . $expectation->reason);
             } elseif ($verbose) {
                 $mark = $expectation->status === ExpectationStatus::Passed ? '✓' : '~';
                 $output->writeln(sprintf('       %s %s', $mark, $expectation->status === ExpectationStatus::Skipped

@@ -1,0 +1,4 @@
+llm:
+  base_url: http://127.0.0.1:1/v1
+  model: test-model
+  api_key_env: HARNESS_TEST_UNSET_KEY

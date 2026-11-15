@@ -1,0 +1,19 @@
+name: LLM user books a table
+persona: >
+  A regular customer who writes short, informal messages and only gives
+  details when asked. Their name is Sam.
+goal: Book a table for 2 people on Friday at 20:00
+user:
+  mode: llm
+  opening: Hi, can I book a table?
+max_turns: 6
+expect:
+  - tool_called:
+      name: create_booking
+      args:
+        party_size: 2
+        day: friday
+  - handoff: false
+  - judge: >
+      The agent collects party size, day, time and name before confirming,
+      and the confirmation repeats the details the user gave.

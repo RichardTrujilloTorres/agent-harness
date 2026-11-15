@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Desemax\AgentHarness\Assertion;
 
+use Desemax\AgentHarness\Llm\LlmClient;
 use Desemax\AgentHarness\Runner\ExpectationResult;
 use Desemax\AgentHarness\Runner\Transcript;
 use Desemax\AgentHarness\Scenario\Expectation;
@@ -32,6 +33,14 @@ final class EvaluatorRegistry implements Evaluator
             ExpectationType::LatencyMsUnder->value => new LatencyEvaluator(),
             ExpectationType::Judge->value => new JudgeEvaluator(),
         ];
+    }
+
+    /**
+     * The default evaluators with a judge backed by the given LLM (skipped when null).
+     */
+    public static function withLlm(?LlmClient $llm, ?int $seed = null): self
+    {
+        return new self([ExpectationType::Judge->value => new JudgeEvaluator($llm, $seed)]);
     }
 
     public function for(ExpectationType $type): Evaluator

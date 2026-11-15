@@ -7,6 +7,7 @@ use Desemax\AgentHarness\Agent\ToolCall;
 use Desemax\AgentHarness\Assertion\EvaluatorRegistry;
 use Desemax\AgentHarness\Assertion\JudgeEvaluator;
 use Desemax\AgentHarness\Assertion\SaidEvaluator;
+use Desemax\AgentHarness\Llm\LlmException;
 use Desemax\AgentHarness\Runner\ExpectationStatus;
 use Desemax\AgentHarness\Runner\ScenarioRunner;
 use Desemax\AgentHarness\Runner\ScenarioStatus;
@@ -17,13 +18,14 @@ use Desemax\AgentHarness\Scenario\Scenario;
 use Desemax\AgentHarness\Scenario\UserMode;
 use Desemax\AgentHarness\Scenario\UserScript;
 use Desemax\AgentHarness\Tests\Support\FakeAgentAdapter;
+use Desemax\AgentHarness\Tests\Support\FakeLlmClient;
 
 /**
  * Plays the replies through a FakeAgentAdapter and returns the transcript.
  *
  * @param list<AgentReply> $replies
  */
-function conversation(array $replies): Transcript
+function playReplies(array $replies): Transcript
 {
     $agent = new FakeAgentAdapter($replies);
     $transcript = new Transcript();
@@ -42,7 +44,7 @@ function conversation(array $replies): Transcript
  */
 function check(ExpectationType $type, string|int|bool|array $payload, array $replies): array
 {
-    $result = (new EvaluatorRegistry())->evaluate(new Expectation($type, $payload), conversation($replies));
+    $result = (new EvaluatorRegistry())->evaluate(new Expectation($type, $payload), playReplies($replies));
 
     return [$result->status, $result->reason];
 }
@@ -174,9 +176,9 @@ describe('latency_ms_under', function (): void {
 });
 
 describe('judge', function (): void {
-    it('is skipped and never fails the scenario', function (): void {
+    it('is skipped without an LLM and never fails the scenario', function (): void {
         expect(check(ExpectationType::Judge, 'The agent is polite.', [new AgentReply('a')]))
-            ->toBe([ExpectationStatus::Skipped, JudgeEvaluator::SKIP_REASON]);
+            ->toBe([ExpectationStatus::Skipped, 'no llm configured in harness.yaml']);
 
         $scenario = new Scenario('s', new UserScript(UserMode::Scripted, ['hi']), [
             new Expectation(ExpectationType::Said, 'hello'),
@@ -185,6 +187,88 @@ describe('judge', function (): void {
         $result = (new ScenarioRunner())->run($scenario, new FakeAgentAdapter([new AgentReply('Hello!')]));
 
         expect($result->status)->toBe(ScenarioStatus::Passed);
+    });
+
+    /**
+     * @param list<string|LlmException> $responses
+     * @return array{0: ExpectationStatus, 1: string, 2: FakeLlmClient}
+     */
+    function judge(array $responses, string $rubric = 'The agent is polite.'): array
+    {
+        $llm = new FakeLlmClient($responses);
+        $transcript = playReplies([new AgentReply('Hello! Booked.', [new ToolCall('create_booking', ['party_size' => 2])]), new AgentReply('A colleague will call you.', handoff: true)]);
+        $result = (new JudgeEvaluator($llm, 3))->evaluate(new Expectation(ExpectationType::Judge, $rubric), $transcript);
+
+        return [$result->status, $result->reason, $llm];
+    }
+
+    it('passes with the judge\'s reason and sends rubric and transcript in JSON mode', function (): void {
+        [$status, $reason, $llm] = judge(['{"pass": true, "reason": "Greets and thanks the user."}']);
+
+        expect($status)->toBe(ExpectationStatus::Passed)
+            ->and($reason)->toBe('judge "The agent is polite.": pass: Greets and thanks the user.')
+            ->and($llm->requests)->toHaveCount(1)
+            ->and($llm->requests[0]['system'])->toBe(JudgeEvaluator::SYSTEM_PROMPT)
+            ->and($llm->requests[0]['options']->jsonMode)->toBeTrue()
+            ->and($llm->requests[0]['options']->temperature)->toBe(0.0)
+            ->and($llm->requests[0]['options']->seed)->toBe(3)
+            ->and($llm->requests[0]['messages'][0]['content'])->toBe(implode("\n", [
+                'Rubric:',
+                'The agent is polite.',
+                '',
+                'Transcript:',
+                'Turn 1',
+                'User: user message 1',
+                'Agent: Hello! Booked.',
+                'Agent called tool create_booking with {"party_size":2}',
+                'Turn 2',
+                'User: user message 2',
+                'Agent: A colleague will call you.',
+                'Agent handed the conversation off to a human.',
+            ]));
+    });
+
+    it('fails with the judge\'s reason', function (): void {
+        [$status, $reason] = judge(['```json' . "\n" . '{"pass": false, "reason": "Never says thank you."}' . "\n" . '```']);
+
+        expect($status)->toBe(ExpectationStatus::Failed)
+            ->and($reason)->toBe('judge "The agent is polite.": fail: Never says thank you.');
+    });
+
+    it('retries once after invalid JSON', function (): void {
+        [$status, $reason, $llm] = judge(['Sure! The agent was polite.', '{"pass": true, "reason": "Polite."}']);
+
+        expect($status)->toBe(ExpectationStatus::Passed)
+            ->and($reason)->toEndWith('pass: Polite.')
+            ->and($llm->requests)->toHaveCount(2);
+    });
+
+    it('errors with the raw excerpt after invalid JSON twice', function (): void {
+        [$status, $reason, $llm] = judge(['not json', '{"pass": "yes"}']);
+
+        expect($status)->toBe(ExpectationStatus::Error)
+            ->and($reason)->toBe('judge "The agent is polite.": judge did not answer {"pass": bool, "reason": string} after a retry; last answer: {"pass": "yes"}')
+            ->and($llm->requests)->toHaveCount(2);
+    });
+
+    it('errors when the LLM fails', function (): void {
+        [$status, $reason] = judge([new LlmException('LLM at x answered HTTP 401: bad key')]);
+
+        expect($status)->toBe(ExpectationStatus::Error)
+            ->and($reason)->toBe('judge "The agent is polite.": LLM at x answered HTTP 401: bad key');
+    });
+
+    it('makes the scenario an error when the judge errors and nothing failed', function (): void {
+        $scenario = new Scenario('s', new UserScript(UserMode::Scripted, ['hi']), [
+            new Expectation(ExpectationType::Said, 'hello'),
+            new Expectation(ExpectationType::Judge, 'The agent is polite.'),
+        ]);
+        $runner = new ScenarioRunner(EvaluatorRegistry::withLlm(new FakeLlmClient(['x', 'y'])));
+
+        $result = $runner->run($scenario, new FakeAgentAdapter([new AgentReply('Hello!')]));
+
+        expect($result->status)->toBe(ScenarioStatus::Error)
+            ->and($result->expectations[1]->status)->toBe(ExpectationStatus::Error);
     });
 });
 

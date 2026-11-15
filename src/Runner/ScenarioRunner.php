@@ -77,7 +77,7 @@ final class ScenarioRunner
     }
 
     /**
-     * Failed if any expectation failed; skipped if nothing could be checked; passed otherwise.
+     * Failed if any expectation failed; error if one could not be evaluated; skipped if nothing could be checked; passed otherwise.
      *
      * @param list<ExpectationResult> $results
      */
@@ -86,6 +86,9 @@ final class ScenarioRunner
         $statuses = array_map(static fn (ExpectationResult $r): ExpectationStatus => $r->status, $results);
         if (in_array(ExpectationStatus::Failed, $statuses, true)) {
             return ScenarioStatus::Failed;
+        }
+        if (in_array(ExpectationStatus::Error, $statuses, true)) {
+            return ScenarioStatus::Error;
         }
         if (!in_array(ExpectationStatus::Passed, $statuses, true)) {
             return ScenarioStatus::Skipped;

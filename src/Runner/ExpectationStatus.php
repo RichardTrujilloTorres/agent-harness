@@ -9,4 +9,5 @@ enum ExpectationStatus: string
     case Passed = 'passed';
     case Failed = 'failed';
     case Skipped = 'skipped';
+    case Error = 'error';
 }

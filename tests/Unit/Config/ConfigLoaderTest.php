@@ -136,3 +136,11 @@ describe('llm section', function (): void {
             ->and(configErrors(['llm' => 'yes']))->toBe(['llm: must be a map']);
     });
 });
+
+it('loads the commented example config for the LLM scenarios', function (): void {
+    $config = (new ConfigLoader())->load(projectRoot() . '/examples/scenarios-llm/harness.example.yaml');
+
+    expect($config->url)->toBe('http://127.0.0.1:8787/chat')
+        ->and($config->llm?->apiKeyEnv)->toBe('HARNESS_LLM_API_KEY')
+        ->and((new Desemax\AgentHarness\Scenario\ScenarioLoader())->load(projectRoot() . '/examples/scenarios-llm/scenarios'))->toHaveCount(2);
+});

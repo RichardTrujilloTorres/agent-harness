@@ -29,4 +29,9 @@ final readonly class ExpectationResult
     {
         return new self($expectation, ExpectationStatus::Skipped, $reason);
     }
+
+    public static function errored(Expectation $expectation, string $reason): self
+    {
+        return new self($expectation, ExpectationStatus::Error, $reason);
+    }
 }

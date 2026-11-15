@@ -1,0 +1,29 @@
+# Example harness.yaml for the LLM-played user and the LLM judge.
+# Copy it to ./harness.yaml (or pass it with --config) and adjust, then:
+#   export HARNESS_LLM_API_KEY=...
+#   bin/agent-harness run examples/scenarios-llm/scenarios --config examples/scenarios-llm/harness.example.yaml
+
+agent:
+  # The demo agent: php -S 127.0.0.1:8787 -t examples/demo-agent/public
+  url: http://127.0.0.1:8787/chat
+  timeout_ms: 10000
+
+llm:
+  # Any server that implements the OpenAI chat completions API:
+  # POST {base_url}/chat/completions
+  base_url: https://llm.example.com/v1
+  # Model name as the server expects it.
+  model: your-model-name
+  # Name of the environment variable that holds the API key.
+  # The key itself never goes in this file.
+  api_key_env: HARNESS_LLM_API_KEY
+  # Per request; LLM calls are slower than most agents.
+  timeout_ms: 30000
+  # Optional cap on the length of each LLM answer.
+  max_tokens: 400
+
+# A model served on your own machine works the same way, for example:
+# llm:
+#   base_url: http://127.0.0.1:8080/v1
+#   model: your-local-model
+#   api_key_env: HARNESS_LLM_API_KEY   # set it to any non-empty value

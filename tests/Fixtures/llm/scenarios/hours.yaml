@@ -1,0 +1,9 @@
+name: LLM user asks for the opening hours
+persona: A curious customer
+goal: Find out the opening hours
+user:
+  mode: llm
+max_turns: 3
+expect:
+  - said: "19:00"
+  - judge: The agent gives the opening hours without inventing anything.
