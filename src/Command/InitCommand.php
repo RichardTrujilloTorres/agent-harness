@@ -19,7 +19,7 @@ final class InitCommand extends Command
     public const string NAME = 'init';
 
     private const string CONFIG = <<<'YAML'
-        # yaml-language-server: $schema=schema/harness.schema.json
+        # yaml-language-server: $schema=vendor/desemax/agent-harness/schema/harness.schema.json
         # Agent endpoint. It can also be supplied with --url.
         agent:
           url: http://127.0.0.1:8787/chat
@@ -51,7 +51,7 @@ final class InitCommand extends Command
         YAML;
 
     private const string SCENARIO = <<<'YAML'
-        # yaml-language-server: $schema=../schema/scenario.schema.json
+        # yaml-language-server: $schema=../vendor/desemax/agent-harness/schema/scenario.schema.json
         name: Example conversation
         persona: A customer who answers every question
         goal: Check that the agent answers helpfully

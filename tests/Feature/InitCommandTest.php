@@ -56,3 +56,32 @@ it('never overwrites an existing file or creates the other file', function (): v
     unlink($dir . '/harness.yaml');
     rmdir($dir);
 });
+
+it('points the editor schema lines at the installed package schemas', function (): void {
+    $dir = sys_get_temp_dir() . '/agent-harness-init-' . bin2hex(random_bytes(4));
+    mkdir($dir);
+    $cwd = (string) getcwd();
+    chdir($dir);
+    try {
+        (new CommandTester((new Application())->find('init')))->execute([]);
+        $files = ['harness.yaml' => $dir . '/harness.yaml', 'scenarios/example.yaml' => $dir . '/scenarios/example.yaml'];
+        $targets = [];
+        foreach ($files as $name => $file) {
+            $firstLine = strtok((string) file_get_contents($file), "\n");
+            expect($firstLine)->toStartWith('# yaml-language-server: $schema=');
+            $relative = substr((string) $firstLine, strlen('# yaml-language-server: $schema='));
+            $targets[$name] = $relative;
+        }
+    } finally {
+        chdir($cwd);
+        exec('rm -rf ' . escapeshellarg($dir));
+    }
+
+    // Resolved from each file's directory, both paths land in vendor/desemax/agent-harness/schema/.
+    expect($targets)->toBe([
+        'harness.yaml' => 'vendor/desemax/agent-harness/schema/harness.schema.json',
+        'scenarios/example.yaml' => '../vendor/desemax/agent-harness/schema/scenario.schema.json',
+    ])
+        ->and(is_file(projectRoot() . '/schema/harness.schema.json'))->toBeTrue()
+        ->and(is_file(projectRoot() . '/schema/scenario.schema.json'))->toBeTrue();
+});
