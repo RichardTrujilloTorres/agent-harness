@@ -1,0 +1,24 @@
+* text=auto eol=lf
+
+*.phar binary
+
+# Not shipped in the Composer package (dist archive). examples/ is kept on purpose:
+# the demo agent and example scenarios are referenced from the README.
+/.github             export-ignore
+/docs                export-ignore
+/tests               export-ignore
+/scripts             export-ignore
+/schema/tests        export-ignore
+/.editorconfig       export-ignore
+/.gitattributes      export-ignore
+/.gitignore          export-ignore
+/.gitleaks.toml      export-ignore
+/box.json            export-ignore
+/composer-require-checker.json export-ignore
+/Makefile            export-ignore
+/phpstan.neon        export-ignore
+/phpunit.xml         export-ignore
+/pint.json           export-ignore
+/psalm.xml           export-ignore
+/rector.php          export-ignore
+/sonar-project.properties export-ignore
