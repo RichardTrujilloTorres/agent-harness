@@ -1,0 +1,15 @@
+{
+    "main": "bin/agent-harness",
+    "output": "build/agent-harness.phar",
+    "directories": [
+        "src",
+        "schema"
+    ],
+    "files": [
+        "LICENSE"
+    ],
+    "dump-autoload": true,
+    "force-autodiscovery": true,
+    "exclude-dev-files": true,
+    "chmod": "0755"
+}

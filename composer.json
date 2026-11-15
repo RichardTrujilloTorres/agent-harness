@@ -14,6 +14,7 @@
     "require": {
         "php": "^8.3",
         "ext-dom": "*",
+        "ext-hash": "*",
         "ext-iconv": "*",
         "ext-mbstring": "*",
         "symfony/console": "^7.1",
@@ -23,7 +24,9 @@
     },
     "require-dev": {
         "ergebnis/composer-normalize": "^2.57",
+        "humbug/box": "^4.7",
         "icanhazstring/composer-unused": "^0.9.8",
+        "justinrainbow/json-schema": "^6.14",
         "laravel/pint": "^1.32",
         "maglnet/composer-require-checker": "^4.20",
         "pestphp/pest": "^3.0",
@@ -63,41 +66,8 @@
         "sort-packages": true
     },
     "scripts": {
-        "lint": "pint --test",
-        "lint:fix": "pint",
-        "stan": "phpstan analyse --no-progress --memory-limit=1G",
-        "rector": "rector process --dry-run --no-progress-bar",
-        "taint": "psalm --taint-analysis --no-progress --no-cache",
-        "test": "pest",
-        "coverage": [
-            "@putenv XDEBUG_MODE=coverage",
-            "pest --coverage --min=95"
-        ],
-        "types": "@php -d memory_limit=1G vendor/bin/pest --type-coverage --min=100",
-        "mutate": [
-            "Composer\\Config::disableProcessTimeout",
-            "@putenv XDEBUG_MODE=coverage",
-            "@php -d memory_limit=4G vendor/bin/pest --mutate --everything --covered-only --parallel --min=85"
-        ],
         "arch": "pest tests/Arch",
-        "schema": "pest tests/Unit/Schema",
         "audit": "@composer audit",
-        "deps": [
-            "@composer validate --strict",
-            "@composer normalize --dry-run",
-            "composer-unused --no-progress",
-            "composer-require-checker check --config-file=composer-require-checker.json composer.json"
-        ],
-        "demo": [
-            "Composer\\Config::disableProcessTimeout",
-            "@php -S 127.0.0.1:8787 -t examples/demo-agent/public"
-        ],
-        "demo:check": "@php scripts/demo-check.php",
-        "phar": "@php -d phar.readonly=0 vendor/bin/box compile --no-interaction",
-        "phar:check": [
-            "@php build/agent-harness.phar validate examples/scenarios",
-            "@php scripts/demo-check.php build/agent-harness.phar"
-        ],
         "check": [
             "@lint",
             "@stan",
@@ -110,27 +80,63 @@
             "@coverage",
             "@types",
             "@mutate",
-            "@demo:check"
-        ]
+            "@schema",
+            "@demo:check",
+            "@phar",
+            "@phar:check"
+        ],
+        "coverage": [
+            "@putenv XDEBUG_MODE=coverage",
+            "pest --coverage --min=95"
+        ],
+        "demo": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php -S 127.0.0.1:8787 -t examples/demo-agent/public"
+        ],
+        "demo:check": "@php scripts/demo-check.php",
+        "deps": [
+            "@composer validate --strict",
+            "@composer normalize --dry-run",
+            "composer-unused --no-progress",
+            "composer-require-checker check --config-file=composer-require-checker.json composer.json"
+        ],
+        "lint": "pint --test",
+        "lint:fix": "pint",
+        "mutate": [
+            "Composer\\Config::disableProcessTimeout",
+            "@putenv XDEBUG_MODE=coverage",
+            "@php -d memory_limit=4G vendor/bin/pest --mutate --everything --covered-only --parallel --min=85"
+        ],
+        "phar": "@php -d phar.readonly=0 vendor/bin/box compile --no-interaction",
+        "phar:check": [
+            "@php build/agent-harness.phar validate examples/scenarios",
+            "@php scripts/demo-check.php build/agent-harness.phar"
+        ],
+        "rector": "rector process --dry-run --no-progress-bar",
+        "schema": "pest tests/Unit/Schema",
+        "stan": "phpstan analyse --no-progress --memory-limit=1G",
+        "taint": "psalm --taint-analysis --no-progress --no-cache",
+        "test": "pest",
+        "types": "@php -d memory_limit=1G vendor/bin/pest --type-coverage --min=100"
     },
     "scripts-descriptions": {
-        "lint": "Check code style with Pint",
-        "lint:fix": "Fix code style with Pint",
-        "stan": "PHPStan at level max with strict and deprecation rules (src, tests, bin)",
-        "rector": "Rector dry run: fails if Rector would change anything",
-        "taint": "Psalm taint analysis",
-        "test": "Run the test suite",
-        "coverage": "Tests with line coverage, at least 95 %",
-        "types": "Type coverage, 100 %",
-        "mutate": "Mutation testing, covered mutation score at least 85 %",
         "arch": "Architecture tests",
-        "schema": "Check the JSON schemas against the validator, examples and fixtures",
         "audit": "Check dependencies for security advisories",
-        "deps": "composer.json valid and normalized, no unused or undeclared dependencies",
+        "check": "Every gate, in order",
+        "coverage": "Tests with line coverage, at least 95 %",
         "demo": "Start the demo agent on http://127.0.0.1:8787/chat",
         "demo:check": "Run the examples against the demo agent: 4 passed, 2 failed, exit 1",
+        "deps": "composer.json valid and normalized, no unused or undeclared dependencies",
+        "lint": "Check code style with Pint",
+        "lint:fix": "Fix code style with Pint",
+        "mutate": "Mutation testing, covered mutation score at least 85 %",
         "phar": "Build build/agent-harness.phar",
         "phar:check": "Smoke test the PHAR: validate and the demo run",
-        "check": "Every gate, in order"
+        "rector": "Rector dry run: fails if Rector would change anything",
+        "schema": "Check the JSON schemas against the validator, examples and fixtures",
+        "stan": "PHPStan at level max with strict and deprecation rules (src, tests, bin)",
+        "taint": "Psalm taint analysis",
+        "test": "Run the test suite",
+        "types": "Type coverage, 100 %"
     }
 }
