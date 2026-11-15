@@ -201,7 +201,7 @@ describe('with an llm section', function (): void {
 
     it('plays the LLM user and asks the judge through the configured client', function (): void {
         $llm = new FakeLlmClient(['When are you open?', '[[DONE]]', '{"pass": true, "reason": "Gives the hours."}']);
-        $tester = new CommandTester(new RunCommand(llmFactory: static fn (): FakeLlmClient => $llm));
+        $tester = new CommandTester(new RunCommand(llmFactory: static fn(): FakeLlmClient => $llm));
         $tester->execute([
             'path' => fixture('llm/scenarios'),
             '--config' => fixture('llm/harness.yaml'),
@@ -241,14 +241,14 @@ it('passes the seed to the LLM', function (): void {
     $server = AgentServer::start(projectRoot() . '/examples/demo-agent/public');
     $llm = new FakeLlmClient(['When are you open?', '[[DONE]]', '{"pass": true, "reason": "ok"}']);
     try {
-        $tester = new CommandTester(new RunCommand(llmFactory: static fn (): FakeLlmClient => $llm));
+        $tester = new CommandTester(new RunCommand(llmFactory: static fn(): FakeLlmClient => $llm));
         $tester->execute(['path' => fixture('llm/scenarios'), '--config' => fixture('llm/harness.yaml'), '--url' => $server->url('/chat'), '--seed' => '1234']);
     } finally {
         $server->stop();
     }
 
     expect($tester->getStatusCode())->toBe(0)
-        ->and(array_map(static fn (array $r): ?int => $r['options']->seed, $llm->requests))->toBe([1234, 1234, 1234]);
+        ->and(array_map(static fn(array $r): ?int => $r['options']->seed, $llm->requests))->toBe([1234, 1234, 1234]);
 });
 
 it('reports a flaky scenario, counts it as a pass and exits 0', function (): void {

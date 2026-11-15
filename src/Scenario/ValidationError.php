@@ -10,8 +10,7 @@ final readonly class ValidationError
         public string $file,
         public string $path,
         public string $reason,
-    ) {
-    }
+    ) {}
 
     public function __toString(): string
     {

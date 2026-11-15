@@ -34,8 +34,7 @@ final class JudgeEvaluator implements Evaluator
     public function __construct(
         private readonly ?LlmClient $client = null,
         private readonly ?int $seed = null,
-    ) {
-    }
+    ) {}
 
     public function evaluate(Expectation $expectation, Transcript $transcript): ExpectationResult
     {

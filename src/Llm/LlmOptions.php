@@ -15,6 +15,5 @@ final readonly class LlmOptions
         public ?int $maxTokens = null,
         public ?int $seed = null,
         public bool $jsonMode = false,
-    ) {
-    }
+    ) {}
 }

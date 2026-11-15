@@ -12,8 +12,7 @@ final readonly class ExpectationResult
         public Expectation $expectation,
         public ExpectationStatus $status,
         public string $reason,
-    ) {
-    }
+    ) {}
 
     public static function passed(Expectation $expectation, string $reason): self
     {

@@ -21,6 +21,5 @@ final readonly class LlmConfig
         public string $apiKeyEnv = self::DEFAULT_API_KEY_ENV,
         public int $timeoutMs = self::DEFAULT_TIMEOUT_MS,
         public ?int $maxTokens = null,
-    ) {
-    }
+    ) {}
 }

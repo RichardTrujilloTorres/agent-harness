@@ -14,9 +14,7 @@ use LogicException;
  */
 final class ToolCalledEvaluator implements Evaluator
 {
-    public function __construct(private readonly ArgumentMatcher $matcher = new ArgumentMatcher())
-    {
-    }
+    public function __construct(private readonly ArgumentMatcher $matcher = new ArgumentMatcher()) {}
 
     public function evaluate(Expectation $expectation, Transcript $transcript): ExpectationResult
     {
@@ -29,10 +27,10 @@ final class ToolCalledEvaluator implements Evaluator
         $label = 'tool_called ' . $name;
 
         $all = $transcript->toolCalls();
-        $matching = array_values(array_filter($all, static fn (array $c): bool => strcasecmp($c['call']->name, $name) === 0));
+        $matching = array_values(array_filter($all, static fn(array $c): bool => strcasecmp($c['call']->name, $name) === 0));
 
         if ($matching === []) {
-            $names = array_values(array_unique(array_map(static fn (array $c): string => $c['call']->name, $all)));
+            $names = array_values(array_unique(array_map(static fn(array $c): string => $c['call']->name, $all)));
 
             return ExpectationResult::failed($expectation, sprintf(
                 '%s: never called; tools called: %s',
@@ -58,7 +56,7 @@ final class ToolCalledEvaluator implements Evaluator
             '%s: called %d times, none matched: %s',
             $label,
             count($mismatches),
-            implode('; ', array_map(static fn (array $m): string => sprintf('turn %d with %s', $m['turn'], $m['mismatch']), $mismatches)),
+            implode('; ', array_map(static fn(array $m): string => sprintf('turn %d with %s', $m['turn'], $m['mismatch']), $mismatches)),
         ));
     }
 }

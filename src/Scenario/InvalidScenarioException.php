@@ -13,6 +13,6 @@ final class InvalidScenarioException extends RuntimeException
      */
     public function __construct(public readonly array $errors)
     {
-        parent::__construct(implode("\n", array_map(static fn (ValidationError $e): string => (string) $e, $errors)));
+        parent::__construct(implode("\n", array_map(static fn(ValidationError $e): string => (string) $e, $errors)));
     }
 }

@@ -17,7 +17,7 @@ function errorsOf(string $fixture): array
         expect($error->file)->toBe($file);
     }
 
-    return array_map(fn (ValidationError $e): array => [$e->path, $e->reason], $errors);
+    return array_map(fn(ValidationError $e): array => [$e->path, $e->reason], $errors);
 }
 
 it('accepts the valid fixtures', function (string $file): void {

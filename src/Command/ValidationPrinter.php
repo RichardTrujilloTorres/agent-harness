@@ -12,9 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 final class ValidationPrinter
 {
-    public function __construct(private readonly ScenarioLoader $loader)
-    {
-    }
+    public function __construct(private readonly ScenarioLoader $loader) {}
 
     /**
      * Checks every file; prints the report when $always is true or any file is invalid.

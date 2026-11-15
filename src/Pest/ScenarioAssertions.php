@@ -145,6 +145,6 @@ final class ScenarioAssertions
             return ['Transcript: no turns'];
         }
 
-        return ['Transcript:', ...array_map(static fn (string $line): string => '  ' . $line, $result->transcript->lines())];
+        return ['Transcript:', ...array_map(static fn(string $line): string => '  ' . $line, $result->transcript->lines())];
     }
 }

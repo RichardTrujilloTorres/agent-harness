@@ -34,7 +34,7 @@ final class AgentServer
 
         $deadline = microtime(true) + 5;
         while (microtime(true) < $deadline) {
-            set_error_handler(static fn (): bool => true);
+            set_error_handler(static fn(): bool => true);
             try {
                 $conn = fsockopen('127.0.0.1', $port, $errno, $errstr, 0.1);
             } finally {

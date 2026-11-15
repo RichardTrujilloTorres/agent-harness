@@ -61,7 +61,7 @@ it('prefers max tokens from the options over the config', function (): void {
 });
 
 it('throws a typed exception for errors', function (MockResponse|Closure $response, string $message): void {
-    expect(fn () => llmClientFor($response)->complete('s', [], new LlmOptions()))
+    expect(fn() => llmClientFor($response)->complete('s', [], new LlmOptions()))
         ->toThrow(LlmException::class, $message);
 })->with([
     'HTTP error' => [new MockResponse('{"error":"rate limited"}', ['http_code' => 429]), 'answered HTTP 429: {"error":"rate limited"}'],
@@ -87,6 +87,6 @@ it('reads the API key from the named environment variable', function (): void {
 it('explains a missing API key environment variable', function (): void {
     putenv('HARNESS_TEST_MISSING_KEY');
 
-    expect(fn () => OpenAiCompatibleClient::fromConfig(new LlmConfig('http://llm.test/v1', 'm', 'HARNESS_TEST_MISSING_KEY')))
+    expect(fn() => OpenAiCompatibleClient::fromConfig(new LlmConfig('http://llm.test/v1', 'm', 'HARNESS_TEST_MISSING_KEY')))
         ->toThrow(LlmException::class, 'Environment variable HARNESS_TEST_MISSING_KEY is not set.');
 });

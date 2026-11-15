@@ -19,6 +19,5 @@ final readonly class Scenario
         public ?string $persona = null,
         public ?string $goal = null,
         public ?string $file = null,
-    ) {
-    }
+    ) {}
 }

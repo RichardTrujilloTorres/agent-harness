@@ -18,7 +18,8 @@ final class OpenAiCompatibleClient implements LlmClient
 
     public function __construct(
         private readonly LlmConfig $config,
-        #[\SensitiveParameter] private readonly string $apiKey,
+        #[\SensitiveParameter]
+        private readonly string $apiKey,
         ?HttpClientInterface $client = null,
     ) {
         $this->client = $client ?? HttpClient::create();

@@ -15,6 +15,5 @@ final readonly class Turn
         public int $number,
         public string $userMessage,
         public AgentReply $reply,
-    ) {
-    }
+    ) {}
 }

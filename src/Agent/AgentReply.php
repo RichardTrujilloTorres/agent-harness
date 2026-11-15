@@ -16,6 +16,5 @@ final readonly class AgentReply
         public bool $handoff = false,
         public int $latencyMs = 0,
         public array $raw = [],
-    ) {
-    }
+    ) {}
 }

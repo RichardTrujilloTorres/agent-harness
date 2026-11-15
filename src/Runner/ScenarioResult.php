@@ -21,8 +21,7 @@ final readonly class ScenarioResult
         public int $durationMs,
         public ?string $message = null,
         public int $attempts = 1,
-    ) {
-    }
+    ) {}
 
     public function withAttempts(int $attempts): self
     {
@@ -57,7 +56,7 @@ final readonly class ScenarioResult
     {
         return array_values(array_filter(
             $this->expectations,
-            static fn (ExpectationResult $r): bool => $r->status === ExpectationStatus::Failed,
+            static fn(ExpectationResult $r): bool => $r->status === ExpectationStatus::Failed,
         ));
     }
 
@@ -68,7 +67,7 @@ final readonly class ScenarioResult
     {
         return array_values(array_filter(
             $this->expectations,
-            static fn (ExpectationResult $r): bool => $r->status === ExpectationStatus::Error,
+            static fn(ExpectationResult $r): bool => $r->status === ExpectationStatus::Error,
         ));
     }
 }

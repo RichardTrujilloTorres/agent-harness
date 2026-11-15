@@ -24,7 +24,7 @@ use Desemax\AgentHarness\Scenario\UserScript;
  */
 function fakeSuite(): SuiteResult
 {
-    $scenario = static fn (string $name): Scenario => new Scenario($name, new UserScript(UserMode::Scripted, ['hi']), [], file: 'scenarios/' . ResultData::slug($name) . '.yaml');
+    $scenario = static fn(string $name): Scenario => new Scenario($name, new UserScript(UserMode::Scripted, ['hi']), [], file: 'scenarios/' . ResultData::slug($name) . '.yaml');
     $said = new Expectation(ExpectationType::Said, 'confirmed');
     $judge = new Expectation(ExpectationType::Judge, 'Polite');
 
@@ -55,7 +55,7 @@ describe('HTML', function (): void {
         $previous = libxml_use_internal_errors(true);
         $loaded = $doc->loadHTML($html);
         // libxml only knows HTML 4: the HTML5 <section> tag is its only complaint.
-        $problems = array_filter(libxml_get_errors(), static fn (LibXMLError $e): bool => !str_contains($e->message, 'Tag section invalid'));
+        $problems = array_filter(libxml_get_errors(), static fn(LibXMLError $e): bool => !str_contains($e->message, 'Tag section invalid'));
         libxml_clear_errors();
         libxml_use_internal_errors($previous);
         $xpath = new DOMXPath($doc);

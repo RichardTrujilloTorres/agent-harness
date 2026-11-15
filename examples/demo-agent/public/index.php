@@ -179,7 +179,7 @@ function handle(string $message, array $state): array
         'name' => extractName(trim($message), $asked === 'name'),
     ];
     $intent = preg_match('/\b(book|booking|reserve|reservation|table)\b/', $text) === 1;
-    $anyFound = array_filter($found, static fn ($v): bool => $v !== null) !== [];
+    $anyFound = array_filter($found, static fn($v): bool => $v !== null) !== [];
 
     if (!$intent && !$anyFound) {
         if ($asked === null && preg_match('/^(hi|hello|hey|good (morning|afternoon|evening))\b/', $text) === 1) {

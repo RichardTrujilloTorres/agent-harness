@@ -33,7 +33,7 @@ final class ScenarioRunner
         private readonly ?LlmClient $llm = null,
         private readonly ?int $seed = null,
     ) {
-        $this->sessionIds = $sessionIds ?? static fn (): string => 'harness-' . bin2hex(random_bytes(8));
+        $this->sessionIds = $sessionIds ?? static fn(): string => 'harness-' . bin2hex(random_bytes(8));
     }
 
     public function run(Scenario $scenario, AgentAdapter $agent): ScenarioResult
@@ -83,7 +83,7 @@ final class ScenarioRunner
      */
     private static function status(array $results): ScenarioStatus
     {
-        $statuses = array_map(static fn (ExpectationResult $r): ExpectationStatus => $r->status, $results);
+        $statuses = array_map(static fn(ExpectationResult $r): ExpectationStatus => $r->status, $results);
         if (in_array(ExpectationStatus::Failed, $statuses, true)) {
             return ScenarioStatus::Failed;
         }

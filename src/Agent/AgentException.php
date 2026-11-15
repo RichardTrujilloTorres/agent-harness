@@ -6,6 +6,4 @@ namespace Desemax\AgentHarness\Agent;
 
 use RuntimeException;
 
-final class AgentException extends RuntimeException
-{
-}
+final class AgentException extends RuntimeException {}

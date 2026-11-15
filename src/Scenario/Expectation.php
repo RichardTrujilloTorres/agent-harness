@@ -21,6 +21,5 @@ final readonly class Expectation
     public function __construct(
         public ExpectationType $type,
         public string|int|bool|array $payload,
-    ) {
-    }
+    ) {}
 }

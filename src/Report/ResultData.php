@@ -114,7 +114,7 @@ final class ResultData
      */
     public static function suiteSlugs(SuiteResult $suite): array
     {
-        return self::uniqueSlugs(array_map(static fn (ScenarioResult $r): string => $r->scenario->name, $suite->results));
+        return self::uniqueSlugs(array_map(static fn(ScenarioResult $r): string => $r->scenario->name, $suite->results));
     }
 
     public static function json(mixed $value): string

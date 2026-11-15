@@ -65,7 +65,7 @@ final class RunCommand extends Command
         private readonly ConfigLoader $configLoader = new ConfigLoader(),
         ?Closure $llmFactory = null,
     ) {
-        $this->llmFactory = $llmFactory ?? static fn (LlmConfig $config): LlmClient => OpenAiCompatibleClient::fromConfig($config);
+        $this->llmFactory = $llmFactory ?? static fn(LlmConfig $config): LlmClient => OpenAiCompatibleClient::fromConfig($config);
         parent::__construct();
     }
 
@@ -157,7 +157,7 @@ final class RunCommand extends Command
 
         $scenarios = $this->loader->load($path);
         if ($filter !== null && $filter !== '') {
-            $scenarios = array_values(array_filter($scenarios, static fn (Scenario $s): bool => mb_stripos($s->name, $filter) !== false));
+            $scenarios = array_values(array_filter($scenarios, static fn(Scenario $s): bool => mb_stripos($s->name, $filter) !== false));
             if ($scenarios === []) {
                 return $this->fail($output, sprintf('No scenario name contains "%s".', $filter));
             }
@@ -246,7 +246,7 @@ final class RunCommand extends Command
      */
     private function runAll(array $scenarios, SuiteRunner $runner, AgentAdapter $agent, OutputInterface $output): SuiteResult
     {
-        $suite = $runner->run($scenarios, $agent, fn (ScenarioResult $result) => $this->print($result, $output));
+        $suite = $runner->run($scenarios, $agent, fn(ScenarioResult $result) => $this->print($result, $output));
         $counts = $suite->counts();
 
         $output->writeln('');

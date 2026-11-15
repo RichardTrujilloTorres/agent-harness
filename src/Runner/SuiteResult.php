@@ -12,8 +12,7 @@ final readonly class SuiteResult
     public function __construct(
         public array $results,
         public int $durationMs,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<value-of<ScenarioStatus>, int>

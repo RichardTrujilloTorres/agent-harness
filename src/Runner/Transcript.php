@@ -17,8 +17,7 @@ final readonly class Transcript
      */
     public function __construct(
         public array $turns = [],
-    ) {
-    }
+    ) {}
 
     public function with(string $userMessage, AgentReply $reply): self
     {
@@ -93,6 +92,6 @@ final readonly class Transcript
 
     public function totalLatencyMs(): int
     {
-        return array_sum(array_map(static fn (Turn $t): int => $t->reply->latencyMs, $this->turns));
+        return array_sum(array_map(static fn(Turn $t): int => $t->reply->latencyMs, $this->turns));
     }
 }

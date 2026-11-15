@@ -24,7 +24,7 @@ use Desemax\AgentHarness\Tests\Support\FakeLlmClient;
  */
 function stubEvaluator(): Evaluator
 {
-    return new class () implements Evaluator {
+    return new class implements Evaluator {
         public function evaluate(Expectation $expectation, Transcript $transcript): ExpectationResult
         {
             return match ($expectation->payload) {
@@ -45,7 +45,7 @@ function scriptedScenario(array $turns, array $expect = ['pass'], int $maxTurns 
     return new Scenario(
         name: 'test',
         user: new UserScript(UserMode::Scripted, $turns),
-        expect: array_map(static fn (string $p): Expectation => new Expectation(ExpectationType::Said, $p), $expect),
+        expect: array_map(static fn(string $p): Expectation => new Expectation(ExpectationType::Said, $p), $expect),
         maxTurns: $maxTurns,
     );
 }
@@ -56,7 +56,7 @@ it('sends every turn in order with one session id and records the transcript', f
         new AgentReply('two', [new ToolCall('create_booking', ['party_size' => 2])], latencyMs: 7),
     ]);
 
-    $result = (new ScenarioRunner(stubEvaluator(), static fn (): string => 'fixed'))->run(scriptedScenario(['a', 'b']), $agent);
+    $result = (new ScenarioRunner(stubEvaluator(), static fn(): string => 'fixed'))->run(scriptedScenario(['a', 'b']), $agent);
 
     expect($result->status)->toBe(ScenarioStatus::Passed)
         ->and($agent->sent)->toBe([['session' => 'fixed', 'message' => 'a'], ['session' => 'fixed', 'message' => 'b']])
@@ -105,7 +105,7 @@ it('derives the scenario status from the expectation results', function (array $
     $result = (new ScenarioRunner(stubEvaluator()))->run(scriptedScenario(['a'], $expect), new FakeAgentAdapter([new AgentReply('x')]));
 
     expect($result->status)->toBe($status)
-        ->and($result->failures())->toHaveCount(count(array_filter($expect, static fn (string $e): bool => $e === 'fail')));
+        ->and($result->failures())->toHaveCount(count(array_filter($expect, static fn(string $e): bool => $e === 'fail')));
 })->with([
     'all pass' => [['pass', 'pass'], ScenarioStatus::Passed],
     'a skip never fails' => [['pass', 'skip'], ScenarioStatus::Passed],
@@ -141,7 +141,7 @@ describe('LLM-played user', function (): void {
         $llm = new FakeLlmClient(['Table for 3 tonight please', 'Name is Sam', '[[DONE]]']);
         $agent = new FakeAgentAdapter([new AgentReply('What name?'), new AgentReply('Booked, Sam.')]);
 
-        $result = (new ScenarioRunner(stubEvaluator(), static fn (): string => 's', $llm, 7))->run(llmScenario(), $agent);
+        $result = (new ScenarioRunner(stubEvaluator(), static fn(): string => 's', $llm, 7))->run(llmScenario(), $agent);
 
         expect($result->status)->toBe(ScenarioStatus::Passed)
             ->and($agent->sent)->toBe([['session' => 's', 'message' => 'Table for 3 tonight please'], ['session' => 's', 'message' => 'Name is Sam']])

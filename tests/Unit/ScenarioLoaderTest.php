@@ -34,7 +34,7 @@ it('loads a valid scenario file into value objects', function (): void {
 it('loads a directory recursively, .yaml and .yml, sorted', function (): void {
     $scenarios = (new ScenarioLoader())->load(fixture('valid'));
 
-    expect(array_map(fn (Scenario $s): string => $s->name, $scenarios))
+    expect(array_map(fn(Scenario $s): string => $s->name, $scenarios))
         ->toBe(['Full scenario', 'LLM user without turns', 'LLM user with an opening line']);
 });
 

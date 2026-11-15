@@ -14,6 +14,5 @@ final readonly class UserScript
         public UserMode $mode,
         public array $turns = [],
         public ?string $opening = null,
-    ) {
-    }
+    ) {}
 }

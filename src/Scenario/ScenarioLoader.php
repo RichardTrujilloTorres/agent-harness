@@ -16,8 +16,7 @@ final class ScenarioLoader
 {
     public function __construct(
         private readonly ScenarioValidator $validator = new ScenarioValidator(),
-    ) {
-    }
+    ) {}
 
     /**
      * Loads one scenario file or every .yaml/.yml file under a directory (recursive).

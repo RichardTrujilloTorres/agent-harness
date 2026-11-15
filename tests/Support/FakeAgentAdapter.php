@@ -20,9 +20,7 @@ final class FakeAgentAdapter implements AgentAdapter
     /**
      * @param list<AgentReply|AgentException|Closure(string): AgentReply> $replies
      */
-    public function __construct(private array $replies)
-    {
-    }
+    public function __construct(private array $replies) {}
 
     public function send(string $sessionId, string $message): AgentReply
     {

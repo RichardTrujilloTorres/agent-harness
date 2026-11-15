@@ -39,9 +39,7 @@ final class Conversation
     /**
      * @param string|Scenario $scenario path to one scenario file, or a Scenario object
      */
-    public function __construct(private readonly string|Scenario $scenario)
-    {
-    }
+    public function __construct(private readonly string|Scenario $scenario) {}
 
     /**
      * The agent to talk to: its chat URL, or any AgentAdapter.

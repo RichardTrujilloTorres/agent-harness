@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Desemax\AgentHarness\Report;
 
-use DOMDocument;
-use DOMElement;
 use Desemax\AgentHarness\Runner\ExpectationResult;
 use Desemax\AgentHarness\Runner\ScenarioResult;
 use Desemax\AgentHarness\Runner\ScenarioStatus;
 use Desemax\AgentHarness\Runner\SuiteResult;
+use DOMDocument;
+use DOMElement;
 
 /**
  * JUnit XML: one testsuite, one testcase per scenario.
@@ -94,7 +94,7 @@ final class JunitReport
      */
     private static function reasons(array $results): string
     {
-        return implode("\n", array_map(static fn (ExpectationResult $r): string => $r->reason, $results));
+        return implode("\n", array_map(static fn(ExpectationResult $r): string => $r->reason, $results));
     }
 
     private function problem(DOMDocument $doc, string $tag, string $message, string $details): DOMElement

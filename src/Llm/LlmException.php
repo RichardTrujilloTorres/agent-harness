@@ -6,6 +6,4 @@ namespace Desemax\AgentHarness\Llm;
 
 use RuntimeException;
 
-final class LlmException extends RuntimeException
-{
-}
+final class LlmException extends RuntimeException {}

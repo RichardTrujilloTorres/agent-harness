@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // Answers "wrong" on the first request and "right" afterwards, to exercise --retries.
 $counter = sys_get_temp_dir() . '/agent-harness-flaky-' . ($_SERVER['SERVER_PORT'] ?? '0');
 $count = is_file($counter) ? (int) file_get_contents($counter) : 0;

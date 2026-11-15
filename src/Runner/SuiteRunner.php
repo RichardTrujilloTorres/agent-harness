@@ -16,8 +16,7 @@ final class SuiteRunner
     public function __construct(
         private readonly ScenarioRunner $runner = new ScenarioRunner(),
         private readonly int $retries = 0,
-    ) {
-    }
+    ) {}
 
     /**
      * @param list<Scenario> $scenarios

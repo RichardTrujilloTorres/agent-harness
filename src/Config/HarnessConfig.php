@@ -26,8 +26,7 @@ final readonly class HarnessConfig
         public string $handoffPath = 'handoff',
         public ?string $file = null,
         public ?LlmConfig $llm = null,
-    ) {
-    }
+    ) {}
 
     public function withUrl(string $url): self
     {

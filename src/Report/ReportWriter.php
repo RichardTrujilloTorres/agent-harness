@@ -17,7 +17,7 @@ final class ReportWriter
     public static function write(string $file, string $contents): void
     {
         self::directory(dirname($file));
-        set_error_handler(static fn (): bool => true);
+        set_error_handler(static fn(): bool => true);
         try {
             $written = file_put_contents($file, $contents);
         } finally {
@@ -36,7 +36,7 @@ final class ReportWriter
         if (is_dir($dir)) {
             return;
         }
-        set_error_handler(static fn (): bool => true);
+        set_error_handler(static fn(): bool => true);
         try {
             $created = mkdir($dir, 0777, true);
         } finally {

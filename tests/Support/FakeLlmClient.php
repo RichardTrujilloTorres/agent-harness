@@ -19,9 +19,7 @@ final class FakeLlmClient implements LlmClient
     /**
      * @param list<string|LlmException> $responses
      */
-    public function __construct(private array $responses)
-    {
-    }
+    public function __construct(private array $responses) {}
 
     public function complete(string $system, array $messages, LlmOptions $options): string
     {
