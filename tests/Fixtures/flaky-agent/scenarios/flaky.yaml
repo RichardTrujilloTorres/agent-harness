@@ -1,0 +1,7 @@
+name: Second answer is right
+user:
+  mode: scripted
+  turns:
+    - Which one?
+expect:
+  - said: right

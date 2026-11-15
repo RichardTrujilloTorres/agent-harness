@@ -19,7 +19,7 @@ use Desemax\AgentHarness\Llm\OpenAiCompatibleClient;
 use Desemax\AgentHarness\Runner\ExpectationStatus;
 use Desemax\AgentHarness\Runner\ScenarioResult;
 use Desemax\AgentHarness\Runner\ScenarioRunner;
-use Desemax\AgentHarness\Runner\ScenarioStatus;
+use Desemax\AgentHarness\Runner\SuiteRunner;
 use Desemax\AgentHarness\Scenario\ExpectationType;
 use Desemax\AgentHarness\Scenario\Scenario;
 use Desemax\AgentHarness\Scenario\ScenarioLoader;
@@ -45,6 +45,7 @@ final class RunCommand extends Command
         'failed' => 'fg=red',
         'skipped' => 'fg=yellow',
         'error' => 'fg=red;options=bold',
+        'flaky' => 'fg=yellow;options=bold',
     ];
 
     /** @var Closure(LlmConfig): LlmClient */
@@ -69,9 +70,11 @@ final class RunCommand extends Command
             ->addOption('url', null, InputOption::VALUE_REQUIRED, 'Agent URL (overrides agent.url)')
             ->addOption('config', null, InputOption::VALUE_REQUIRED, 'Config file (default: ./' . ConfigLoader::DEFAULT_FILE . ' if present)')
             ->addOption('filter', null, InputOption::VALUE_REQUIRED, 'Only run scenarios whose name contains this text (case-insensitive)')
+            ->addOption('seed', null, InputOption::VALUE_REQUIRED, 'Seed passed to the LLM for the LLM-played user and the judge')
+            ->addOption('retries', null, InputOption::VALUE_REQUIRED, 'Re-run a failed or errored scenario up to this many times; passing on a retry is reported FLAKY', '0')
             ->setHelp(<<<'HELP'
                 Exit codes:
-                  0  no failures (skipped scenarios allowed)
+                  0  no failures (skipped and flaky scenarios allowed)
                   1  at least one scenario failed
                   2  bad path, bad config or invalid scenarios
                   3  at least one scenario errored (agent or LLM unreachable, bad response, judge without a usable answer)
@@ -86,6 +89,14 @@ final class RunCommand extends Command
         $filter = $input->getOption('filter');
         if (!is_string($path) || ($url !== null && !is_string($url)) || ($configFile !== null && !is_string($configFile)) || ($filter !== null && !is_string($filter))) {
             return $this->fail($output, 'Arguments and options must be strings.');
+        }
+        $seed = self::intOption($input->getOption('seed'));
+        if ($input->getOption('seed') !== null && $seed === null) {
+            return $this->fail($output, '--seed must be an integer.');
+        }
+        $retries = self::intOption($input->getOption('retries'));
+        if ($retries === null || $retries < 0) {
+            return $this->fail($output, '--retries must be an integer >= 0.');
         }
 
         try {
@@ -141,9 +152,21 @@ final class RunCommand extends Command
             }
         }
 
-        $runner = new ScenarioRunner(EvaluatorRegistry::withLlm($llm), llm: $llm);
+        $runner = new SuiteRunner(new ScenarioRunner(EvaluatorRegistry::withLlm($llm, $seed), llm: $llm, seed: $seed), $retries);
 
         return $this->runAll($scenarios, $runner, new HttpAgentAdapter($config), $output);
+    }
+
+    private static function intOption(mixed $value): ?int
+    {
+        if (is_int($value)) {
+            return $value;
+        }
+        if (!is_string($value) || preg_match('/^-?\d+$/', $value) !== 1) {
+            return null;
+        }
+
+        return (int) $value;
     }
 
     /**
@@ -168,26 +191,21 @@ final class RunCommand extends Command
     /**
      * @param list<Scenario> $scenarios
      */
-    private function runAll(array $scenarios, ScenarioRunner $runner, AgentAdapter $agent, OutputInterface $output): int
+    private function runAll(array $scenarios, SuiteRunner $runner, AgentAdapter $agent, OutputInterface $output): int
     {
-        $start = hrtime(true);
-        $counts = array_fill_keys(array_map(static fn (ScenarioStatus $s): string => $s->value, ScenarioStatus::cases()), 0);
-
-        foreach ($scenarios as $scenario) {
-            $result = $runner->run($scenario, $agent);
-            $counts[$result->status->value]++;
-            $this->print($result, $output);
-        }
+        $suite = $runner->run($scenarios, $agent, fn (ScenarioResult $result) => $this->print($result, $output));
+        $counts = $suite->counts();
 
         $output->writeln('');
         $output->writeln(sprintf(
-            '%d scenario(s): %d passed, %d failed, %d skipped, %d errors in %d ms',
+            '%d scenario(s): %d passed, %s%d failed, %d skipped, %d errors in %d ms',
             count($scenarios),
             $counts['passed'],
+            $counts['flaky'] > 0 ? sprintf('%d flaky, ', $counts['flaky']) : '',
             $counts['failed'],
             $counts['skipped'],
             $counts['error'],
-            (int) round((hrtime(true) - $start) / 1_000_000),
+            $suite->durationMs,
         ));
 
         return match (true) {

@@ -202,3 +202,45 @@ describe('with an llm section', function (): void {
         expect($tester->getStatusCode())->toBe(0);
     });
 });
+
+it('passes the seed to the LLM', function (): void {
+    $server = AgentServer::start(projectRoot() . '/examples/demo-agent/public');
+    $llm = new FakeLlmClient(['When are you open?', '[[DONE]]', '{"pass": true, "reason": "ok"}']);
+    try {
+        $tester = new CommandTester(new RunCommand(llmFactory: static fn (): FakeLlmClient => $llm));
+        $tester->execute(['path' => fixture('llm/scenarios'), '--config' => fixture('llm/harness.yaml'), '--url' => $server->url('/chat'), '--seed' => '1234']);
+    } finally {
+        $server->stop();
+    }
+
+    expect($tester->getStatusCode())->toBe(0)
+        ->and(array_map(static fn (array $r): ?int => $r['options']->seed, $llm->requests))->toBe([1234, 1234, 1234]);
+});
+
+it('reports a flaky scenario, counts it as a pass and exits 0', function (): void {
+    $server = AgentServer::start(fixture('flaky-agent'));
+    $counter = sys_get_temp_dir() . '/agent-harness-flaky-' . $server->port;
+    @unlink($counter);
+    try {
+        $tester = runScenarios(fixture('flaky-agent/scenarios'), ['--url' => $server->url('/'), '--retries' => '2']);
+    } finally {
+        $server->stop();
+        @unlink($counter);
+    }
+    $display = $tester->getDisplay();
+
+    expect($tester->getStatusCode())->toBe(0)
+        ->and($display)->toMatch('/^FLAKY  Second answer is right  \(1 turn, \d+ ms\)$/m')
+        ->and($display)->toContain('passed on attempt 2 of 3')
+        ->and($display)->toMatch('/1 scenario\(s\): 0 passed, 1 flaky, 0 failed, 0 skipped, 0 errors in \d+ ms/');
+});
+
+it('rejects bad --seed and --retries values', function (array $options, string $message): void {
+    $tester = runScenarios(projectRoot() . '/examples/scenarios', ['--url' => 'http://x/chat'] + $options);
+
+    expect($tester->getStatusCode())->toBe(2)->and($tester->getDisplay())->toContain($message);
+})->with([
+    'seed' => [['--seed' => 'abc'], '--seed must be an integer.'],
+    'retries negative' => [['--retries' => '-1'], '--retries must be an integer >= 0.'],
+    'retries text' => [['--retries' => 'two'], '--retries must be an integer >= 0.'],
+]);

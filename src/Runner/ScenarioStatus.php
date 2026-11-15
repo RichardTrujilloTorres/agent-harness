@@ -10,6 +10,8 @@ enum ScenarioStatus: string
     case Failed = 'failed';
     case Skipped = 'skipped';
     case Error = 'error';
+    /** Failed or errored at first, passed on a retry. Counts as a pass for the exit code. */
+    case Flaky = 'flaky';
 
     public function label(): string
     {
@@ -18,6 +20,15 @@ enum ScenarioStatus: string
             self::Failed => 'FAIL',
             self::Skipped => 'SKIP',
             self::Error => 'ERROR',
+            self::Flaky => 'FLAKY',
         };
+    }
+
+    /**
+     * Failed or errored: worth a retry and not a pass.
+     */
+    public function isFailure(): bool
+    {
+        return $this === self::Failed || $this === self::Error;
     }
 }
