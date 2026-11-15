@@ -1,8 +1,11 @@
 # Mirrors the composer scripts; run "composer list" for the descriptions.
-.PHONY: install lint lint-fix stan rector taint test coverage types mutate arch schema audit deps demo demo-check phar phar-check check
+.PHONY: install commits lint lint-fix stan rector taint test coverage types mutate arch schema deps-audit deps demo demo-check phar phar-check check
 
 install:
 	composer install
+
+commits:
+	composer commits
 
 lint:
 	composer lint
@@ -37,8 +40,8 @@ arch:
 schema:
 	composer schema
 
-audit:
-	composer audit
+deps-audit:
+	composer deps:audit
 
 deps:
 	composer deps

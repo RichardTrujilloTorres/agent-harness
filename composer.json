@@ -71,7 +71,6 @@
     },
     "scripts": {
         "arch": "pest tests/Arch",
-        "audit": "@composer audit",
         "check": [
             "@commits",
             "@lint",
@@ -79,7 +78,7 @@
             "@rector",
             "@taint",
             "@deps",
-            "@audit",
+            "@deps:audit",
             "@test",
             "@arch",
             "@coverage",
@@ -106,6 +105,7 @@
             "composer-unused --no-progress",
             "composer-require-checker check --config-file=composer-require-checker.json composer.json"
         ],
+        "deps:audit": "bash scripts/audit",
         "lint": "pint --test",
         "lint:fix": "pint",
         "mutate": [
@@ -127,13 +127,13 @@
     },
     "scripts-descriptions": {
         "arch": "Architecture tests",
-        "audit": "Check dependencies for security advisories",
         "check": "Every gate, in order",
         "commits": "Lint every commit message from the root commit",
         "coverage": "Tests with line coverage, at least 95 %",
         "demo": "Start the demo agent on http://127.0.0.1:8787/chat",
         "demo:check": "Run the examples against the demo agent: 4 passed, 2 failed, exit 1",
         "deps": "composer.json valid and normalized, no unused or undeclared dependencies",
+        "deps:audit": "Check dependencies for security advisories and abandoned packages",
         "lint": "Check code style with Pint",
         "lint:fix": "Fix code style with Pint",
         "mutate": "Mutation testing, covered mutation score at least 85 %",

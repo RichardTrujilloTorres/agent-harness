@@ -85,7 +85,7 @@ jobs:
       - run: composer validate --strict
       - run: composer install --no-progress --prefer-dist
       - run: composer deps
-      - run: composer audit
+      - run: composer deps:audit
 
   tests:
     name: Tests (PHP ${{ matrix.php }}, ${{ matrix.dependencies }})

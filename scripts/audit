@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+output="$(mktemp "${TMPDIR:-/tmp}/agent-harness-audit.XXXXXX")"
+trap 'rm -f "$output"' EXIT
+
+composer audit "$@" >"$output" 2>&1
+status=$?
+cat "$output"
+
+if [[ "$status" -eq 0 || ( "$status" -ne 11 && "$status" -ne 139 ) || -s "$output" ]]; then
+  exit "$status"
+fi
+
+printf 'composer audit exited %s without output; retrying with curl-multi disabled\n' "$status" >&2
+php -d disable_functions=curl_multi_exec,curl_multi_init,curl_share_init "$(command -v composer)" audit "$@"
