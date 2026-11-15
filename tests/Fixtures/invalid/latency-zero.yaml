@@ -1,0 +1,5 @@
+name: x
+user: {mode: scripted, turns: ["hi"]}
+expect:
+  - said: hi
+  - latency_ms_under: 0

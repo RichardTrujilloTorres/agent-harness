@@ -1,0 +1,20 @@
+name: Full scenario
+persona: A regular customer
+goal: Book a table
+user:
+  mode: scripted
+  turns:
+    - "Hi"
+    - "Table for 2"
+max_turns: 6
+expect:
+  - tool_called:
+      name: create_booking
+      args:
+        party_size: 2
+  - said: confirmed
+  - never_said: gluten-free
+  - handoff: false
+  - max_turns: 4
+  - latency_ms_under: 2000
+  - judge: The agent is polite.

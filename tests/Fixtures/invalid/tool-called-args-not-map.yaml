@@ -1,0 +1,4 @@
+name: x
+user: {mode: scripted, turns: ["hi"]}
+expect:
+  - tool_called: {name: create_booking, args: [1, 2]}

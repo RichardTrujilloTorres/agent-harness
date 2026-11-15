@@ -1,0 +1,6 @@
+user: {mode: scripted}
+max_turns: 0
+expect:
+  - said: hi
+  - tool_called: {}
+colour: red

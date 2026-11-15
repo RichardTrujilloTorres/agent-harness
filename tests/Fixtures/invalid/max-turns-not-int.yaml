@@ -1,0 +1,4 @@
+name: x
+user: {mode: scripted, turns: ["hi"]}
+max_turns: "ten"
+expect: [{said: hi}]

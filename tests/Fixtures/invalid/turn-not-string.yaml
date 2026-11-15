@@ -1,0 +1,3 @@
+name: x
+user: {mode: scripted, turns: ["hi", 42]}
+expect: [{said: hi}]

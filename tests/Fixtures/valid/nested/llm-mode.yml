@@ -1,0 +1,5 @@
+name: LLM user without turns
+user:
+  mode: llm
+expect:
+  - said: hello

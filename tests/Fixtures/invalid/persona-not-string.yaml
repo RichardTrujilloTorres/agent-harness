@@ -1,0 +1,4 @@
+name: x
+persona: {a: 1}
+user: {mode: scripted, turns: ["hi"]}
+expect: [{said: hi}]

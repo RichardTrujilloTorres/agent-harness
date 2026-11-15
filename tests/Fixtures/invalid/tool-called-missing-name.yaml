@@ -1,0 +1,7 @@
+name: x
+user: {mode: scripted, turns: ["hi"]}
+expect:
+  - said: hi
+  - handoff: false
+  - tool_called:
+      args: {party_size: 2}
