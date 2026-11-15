@@ -1,6 +1,8 @@
 {
     "name": "desemax/agent-harness",
     "description": "Scenario-based test runner for conversational agents: scripted or LLM-played users, deterministic checks, LLM judge, HTML and JUnit reports.",
+    "license": "MIT",
+    "type": "library",
     "keywords": [
         "testing",
         "ai",
@@ -9,16 +11,21 @@
         "chatbot",
         "pest"
     ],
-    "type": "library",
-    "license": "MIT",
     "require": {
         "php": "^8.3",
+        "ext-dom": "*",
+        "ext-iconv": "*",
+        "ext-mbstring": "*",
         "symfony/console": "^7.1",
-        "symfony/yaml": "^7.1",
-        "symfony/http-client": "^7.1"
+        "symfony/http-client": "^7.1",
+        "symfony/http-client-contracts": "^3.5",
+        "symfony/yaml": "^7.1"
     },
     "require-dev": {
+        "ergebnis/composer-normalize": "^2.57",
+        "icanhazstring/composer-unused": "^0.9.8",
         "laravel/pint": "^1.32",
+        "maglnet/composer-require-checker": "^4.20",
         "pestphp/pest": "^3.0",
         "phpstan/phpstan": "^2.0",
         "phpstan/phpstan-deprecation-rules": "^2.0",
@@ -28,6 +35,8 @@
     "suggest": {
         "pestphp/pest": "Write conversation tests in your own Pest suite with conversation() and toPassScenario()"
     },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
     "autoload": {
         "psr-4": {
             "Desemax\\AgentHarness\\": "src/"
@@ -44,25 +53,24 @@
     "bin": [
         "bin/agent-harness"
     ],
+    "config": {
+        "allow-plugins": {
+            "ergebnis/composer-normalize": true,
+            "pestphp/pest-plugin": true
+        },
+        "sort-packages": true
+    },
     "scripts": {
-        "test": "pest",
-        "stan": "phpstan analyse --no-progress",
         "demo": [
             "Composer\\Config::disableProcessTimeout",
             "@php -S 127.0.0.1:8787 -t examples/demo-agent/public"
-        ]
+        ],
+        "stan": "phpstan analyse --no-progress",
+        "test": "pest"
     },
     "scripts-descriptions": {
-        "test": "Run the test suite",
+        "demo": "Start the demo agent on http://127.0.0.1:8787/chat",
         "stan": "Run PHPStan at level max",
-        "demo": "Start the demo agent on http://127.0.0.1:8787/chat"
-    },
-    "config": {
-        "sort-packages": true,
-        "allow-plugins": {
-            "pestphp/pest-plugin": true
-        }
-    },
-    "minimum-stability": "stable",
-    "prefer-stable": true
+        "test": "Run the test suite"
+    }
 }
