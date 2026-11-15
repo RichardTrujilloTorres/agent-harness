@@ -1,6 +1,6 @@
 # Threat model
 
-This document describes what agent-harness protects, where trust changes hands, and how each threat is handled. Every row in the table names the code that handles it and the test that proves it. Report a vulnerability as described in [SECURITY.md](../../SECURITY.md).
+This document describes what agent-harness protects, where trust changes hands, and how each threat is handled. Every row in the table names the code that handles it and the test that proves it. Report a vulnerability as described in [SECURITY.md](policy.md).
 
 ## What agent-harness does
 
