@@ -102,10 +102,10 @@ it('stops when the scenario max_turns is reached', function (): void {
 });
 
 it('derives the scenario status from the expectation results', function (array $expect, ScenarioStatus $status): void {
-    $result = (new ScenarioRunner(stubEvaluator()))->run(scriptedScenario(['a'], $expect), new FakeAgentAdapter([new AgentReply('x')]));
+    $result = (new ScenarioRunner(stubEvaluator()))->run(scriptedScenario(['a'], stringList($expect)), new FakeAgentAdapter([new AgentReply('x')]));
 
     expect($result->status)->toBe($status)
-        ->and($result->failures())->toHaveCount(count(array_filter($expect, static fn(string $e): bool => $e === 'fail')));
+        ->and($result->failures())->toHaveCount(count(array_filter(stringList($expect), static fn(string $e): bool => $e === 'fail')));
 })->with([
     'all pass' => [['pass', 'pass'], ScenarioStatus::Passed],
     'a skip never fails' => [['pass', 'skip'], ScenarioStatus::Passed],

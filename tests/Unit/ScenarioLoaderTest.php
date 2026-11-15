@@ -7,6 +7,7 @@ use Desemax\AgentHarness\Scenario\InvalidScenarioException;
 use Desemax\AgentHarness\Scenario\Scenario;
 use Desemax\AgentHarness\Scenario\ScenarioLoader;
 use Desemax\AgentHarness\Scenario\UserMode;
+use PHPUnit\Framework\Assert;
 
 it('loads a valid scenario file into value objects', function (): void {
     $scenarios = (new ScenarioLoader())->load(fixture('valid/full.yaml'));
@@ -59,7 +60,7 @@ it('reads the opening line of an LLM user', function (): void {
 it('throws with all errors when a file is invalid', function (): void {
     try {
         (new ScenarioLoader())->load(fixture('invalid/multiple-errors.yaml'));
-        $this->fail('Expected InvalidScenarioException');
+        Assert::fail('Expected InvalidScenarioException');
     } catch (InvalidScenarioException $e) {
         expect(count($e->errors))->toBeGreaterThan(1);
     }

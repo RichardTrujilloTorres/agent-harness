@@ -12,7 +12,8 @@ declare(strict_types=1);
 header('Content-Type: application/json');
 
 $in = json_decode((string) file_get_contents('php://input'), true);
-if (!is_array($in) || !is_string($in['conversation']['id'] ?? null) || !is_string($in['input'] ?? null)) {
+$conversation = is_array($in) ? $in['conversation'] ?? null : null;
+if (!is_array($in) || !is_array($conversation) || !is_string($conversation['id'] ?? null) || !is_string($in['input'] ?? null)) {
     http_response_code(400);
     echo json_encode(['error' => 'expected {"conversation": {"id": string}, "input": string}']);
     exit;

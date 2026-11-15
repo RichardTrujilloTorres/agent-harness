@@ -49,6 +49,9 @@ function check(ExpectationType $type, string|int|bool|array $payload, array $rep
     return [$result->status, $result->reason];
 }
 
+/**
+ * @param array<string, mixed> $args
+ */
 function booking(array $args, int $latency = 10): AgentReply
 {
     return new AgentReply('Booked.', [new ToolCall('create_booking', $args)], latencyMs: $latency);
@@ -84,7 +87,7 @@ describe('tool_called', function (): void {
             ->toBe('tool_called create_booking: called with no notes, expected "window"');
     });
 
-    it('reports every call when several calls fail to match', function () use ($args): void {
+    it('reports every call when several calls fail to match', function (): void {
         expect(check(ExpectationType::ToolCalled, ['name' => 'create_booking', 'args' => ['party_size' => 2]], [
             booking(['party_size' => 3]),
             booking(['party_size' => 4]),

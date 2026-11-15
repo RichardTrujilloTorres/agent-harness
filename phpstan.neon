@@ -1,4 +1,13 @@
+includes:
+    - vendor/phpstan/phpstan-strict-rules/rules.neon
+    - vendor/phpstan/phpstan-deprecation-rules/rules.neon
+
 parameters:
     level: max
     paths:
         - src
+        - tests
+        - bin/agent-harness
+    excludePaths:
+        analyseAndScan:
+            - tests/Fixtures/*/scenarios

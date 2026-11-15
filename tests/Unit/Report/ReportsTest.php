@@ -20,6 +20,44 @@ use Desemax\AgentHarness\Scenario\UserMode;
 use Desemax\AgentHarness\Scenario\UserScript;
 
 /**
+ * The nodes matching an XPath query; throws on an invalid query.
+ *
+ * @return DOMNodeList<DOMNameSpaceNode|DOMNode>
+ */
+function nodes(DOMXPath $xpath, string $query): DOMNodeList
+{
+    $nodes = $xpath->query($query);
+    if ($nodes === false) {
+        throw new InvalidArgumentException("Invalid XPath query: {$query}");
+    }
+
+    return $nodes;
+}
+
+/**
+ * The text of the first node matching an XPath query, or null when nothing matches.
+ */
+function firstText(DOMXPath $xpath, string $query): ?string
+{
+    $node = nodes($xpath, $query)->item(0);
+
+    return $node instanceof DOMNode ? $node->textContent : null;
+}
+
+/**
+ * The first element matching an XPath query; throws when it is missing or not an element.
+ */
+function firstElement(DOMXPath $xpath, string $query): DOMElement
+{
+    $node = nodes($xpath, $query)->item(0);
+    if (!$node instanceof DOMElement) {
+        throw new UnexpectedValueException("No element matches {$query}.");
+    }
+
+    return $node;
+}
+
+/**
  * A fake run: one result per scenario status, with a hostile reply in the first one.
  */
 function fakeSuite(): SuiteResult
@@ -62,12 +100,12 @@ describe('HTML', function (): void {
 
         expect($loaded)->toBeTrue()->and($problems)->toBe([]);
 
-        expect($xpath->query('//script')->length)->toBe(0)
-            ->and($xpath->query('//link | //img | //iframe')->length)->toBe(0)
-            ->and($xpath->query('//style')->length)->toBe(1)
-            ->and($xpath->query('//section')->length)->toBe(5)
-            ->and($xpath->query('//span[contains(@class, "badge")]')->length)->toBe(5)
-            ->and($xpath->query('//div[@class="turn"]')->length)->toBe(6)
+        expect(nodes($xpath, '//script')->length)->toBe(0)
+            ->and(nodes($xpath, '//link | //img | //iframe')->length)->toBe(0)
+            ->and(nodes($xpath, '//style')->length)->toBe(1)
+            ->and(nodes($xpath, '//section')->length)->toBe(5)
+            ->and(nodes($xpath, '//span[contains(@class, "badge")]')->length)->toBe(5)
+            ->and(nodes($xpath, '//div[@class="turn"]')->length)->toBe(6)
             ->and($html)->toContain('prefers-color-scheme: dark')
             ->and($html)->toContain('<b>5</b> scenario(s)')
             ->and($html)->toContain('<span class="c-passed"><b>1</b> pass</span>')
@@ -103,23 +141,23 @@ describe('JUnit', function (): void {
         expect($doc->loadXML((new JunitReport())->render(fakeSuite())))->toBeTrue();
         $xpath = new DOMXPath($doc);
 
-        $suite = $xpath->query('/testsuites/testsuite')->item(0);
-        expect($xpath->query('/testsuites/testsuite')->length)->toBe(1)
+        $suite = firstElement($xpath, '/testsuites/testsuite');
+        expect(nodes($xpath, '/testsuites/testsuite')->length)->toBe(1)
             ->and($suite)->toBeInstanceOf(DOMElement::class)
             ->and($suite->getAttribute('tests'))->toBe('5')
             ->and($suite->getAttribute('failures'))->toBe('1')
             ->and($suite->getAttribute('errors'))->toBe('1')
             ->and($suite->getAttribute('skipped'))->toBe('1')
             ->and($suite->getAttribute('time'))->toBe('0.098')
-            ->and($xpath->query('//testcase')->length)->toBe(5)
-            ->and($xpath->query('//testcase[@name="Large party"]/failure')->length)->toBe(1)
-            ->and($xpath->query('//testcase[@name="Large party"]/failure')->item(0)?->textContent)->toBe("handoff true: no handoff in 2 turn(s)\nnever_said \"confirmed\": said in turn 2: \"<i>x</i>\"")
-            ->and($xpath->query('//testcase[@name="Large party"]/failure/@message')->item(0)?->nodeValue)->toBe('handoff true: no handoff in 2 turn(s)')
-            ->and($xpath->query('//testcase[@name="Agent down"]/error/@message')->item(0)?->nodeValue)->toBe('Agent at http://x is unreachable: refused')
-            ->and($xpath->query('//testcase[@name="LLM user"]/skipped/@message')->item(0)?->nodeValue)->toBe('no llm configured in harness.yaml')
-            ->and($xpath->query('//testcase[@name="Happy path booking"][not(failure) and not(error) and not(skipped)]')->length)->toBe(2)
-            ->and($xpath->query('//testcase[@name="Happy path booking"]/@classname')->item(0)?->nodeValue)->toBe('scenarios/happy-path-booking.yaml')
-            ->and($xpath->query('//testcase[@name="Happy path booking"]/system-out')->item(0)?->textContent)->toContain('agent: <script>alert("x")</script> Booked & confirmed. (12 ms)');
+            ->and(nodes($xpath, '//testcase')->length)->toBe(5)
+            ->and(nodes($xpath, '//testcase[@name="Large party"]/failure')->length)->toBe(1)
+            ->and(firstText($xpath, '//testcase[@name="Large party"]/failure'))->toBe("handoff true: no handoff in 2 turn(s)\nnever_said \"confirmed\": said in turn 2: \"<i>x</i>\"")
+            ->and(nodes($xpath, '//testcase[@name="Large party"]/failure/@message')->item(0)?->nodeValue)->toBe('handoff true: no handoff in 2 turn(s)')
+            ->and(nodes($xpath, '//testcase[@name="Agent down"]/error/@message')->item(0)?->nodeValue)->toBe('Agent at http://x is unreachable: refused')
+            ->and(nodes($xpath, '//testcase[@name="LLM user"]/skipped/@message')->item(0)?->nodeValue)->toBe('no llm configured in harness.yaml')
+            ->and(nodes($xpath, '//testcase[@name="Happy path booking"][not(failure) and not(error) and not(skipped)]')->length)->toBe(2)
+            ->and(nodes($xpath, '//testcase[@name="Happy path booking"]/@classname')->item(0)?->nodeValue)->toBe('scenarios/happy-path-booking.yaml')
+            ->and(firstText($xpath, '//testcase[@name="Happy path booking"]/system-out'))->toContain('agent: <script>alert("x")</script> Booked & confirmed. (12 ms)');
     });
 
     it('escapes reply text instead of emitting markup', function (): void {
@@ -136,11 +174,12 @@ describe('transcripts', function (): void {
 
         expect(array_keys($files))->toBe(['happy-path-booking.json', 'large-party.json', 'agent-down.json', 'llm-user.json', 'happy-path-booking-2.json']);
 
-        $data = json_decode($files['happy-path-booking.json'], true);
+        $data = jsonArray($files['happy-path-booking.json']);
+        $turns = arrayAt($data, 'turns');
         expect($data['name'])->toBe('Happy path booking')
             ->and($data['status'])->toBe('passed')
-            ->and($data['turns'])->toHaveCount(2)
-            ->and($data['turns'][0])->toBe([
+            ->and($turns)->toHaveCount(2)
+            ->and($turns[0])->toBe([
                 'number' => 1,
                 'user' => 'Book for <b>2</b>',
                 'agent' => '<script>alert("x")</script> Booked & confirmed.',
@@ -148,9 +187,9 @@ describe('transcripts', function (): void {
                 'handoff' => false,
                 'latency_ms' => 12,
             ])
-            ->and($data['turns'][1]['handoff'])->toBeTrue()
-            ->and($data['expectations'][1])->toBe(['type' => 'judge', 'expected' => 'Polite', 'status' => 'skipped', 'reason' => 'no llm configured in harness.yaml'])
-            ->and(json_decode($files['happy-path-booking-2.json'], true)['attempts'])->toBe(2);
+            ->and(arrayAt($turns, 1)['handoff'])->toBeTrue()
+            ->and(arrayAt($data, 'expectations')[1])->toBe(['type' => 'judge', 'expected' => 'Polite', 'status' => 'skipped', 'reason' => 'no llm configured in harness.yaml'])
+            ->and(jsonArray($files['happy-path-booking-2.json'])['attempts'])->toBe(2);
     });
 
     it('writes the files into a new directory', function (): void {
@@ -160,7 +199,7 @@ describe('transcripts', function (): void {
 
         expect($paths)->toHaveCount(5)
             ->and(is_file($dir . '/large-party.json'))->toBeTrue();
-        array_map('unlink', $paths);
+        array_map(unlink(...), $paths);
         rmdir($dir);
         rmdir(dirname($dir));
     });

@@ -7,12 +7,11 @@ use Desemax\AgentHarness\Tests\Support\AgentServer;
 use Symfony\Component\HttpClient\HttpClient;
 
 beforeEach(function (): void {
-    $this->server = AgentServer::start(projectRoot() . '/examples/demo-agent/public');
-    $this->baseUrl = $this->server->url();
+    AgentServer::startShared(projectRoot() . '/examples/demo-agent/public');
 });
 
 afterEach(function (): void {
-    $this->server->stop();
+    AgentServer::stopShared();
 });
 
 /**
@@ -24,7 +23,15 @@ function chat(string $baseUrl, string $sessionId, string $message, string $metho
         'json' => ['session_id' => $sessionId, 'message' => $message],
     ]);
 
-    return ['status' => $response->getStatusCode(), 'body' => $response->toArray(false)];
+    $body = [];
+    foreach ($response->toArray(false) as $key => $value) {
+        if (!is_string($key)) {
+            throw new UnexpectedValueException('The agent answered a JSON list instead of an object.');
+        }
+        $body[$key] = $value;
+    }
+
+    return ['status' => $response->getStatusCode(), 'body' => $body];
 }
 
 it('books a table when given the happy-booking scenario turns', function (): void {
@@ -33,10 +40,11 @@ it('books a table when given the happy-booking scenario turns', function (): voi
 
     $responses = [];
     foreach ($scenario->user->turns as $turn) {
-        $responses[] = chat($this->baseUrl, $session, $turn);
+        $responses[] = chat(AgentServer::shared()->url(), $session, $turn);
     }
 
-    $last = end($responses);
+    expect($responses)->not->toBeEmpty();
+    $last = $responses[count($responses) - 1];
     expect($last['status'])->toBe(200)
         ->and($last['body']['reply'])->toContain('confirmed')
         ->and($last['body']['handoff'])->toBeFalse()
@@ -50,12 +58,72 @@ it('books a table when given the happy-booking scenario turns', function (): voi
     }
 });
 
-it('returns 404 JSON for anything other than POST /chat', function (string $method, string $path): void {
-    $r = chat($this->baseUrl, 's', 'hi', $method, $path);
+it('returns 404 JSON for a path other than /chat', function (): void {
+    $r = chat(AgentServer::shared()->url(), 's', 'hi', 'POST', '/other');
 
     expect($r['status'])->toBe(404)
         ->and($r['body'])->toHaveKey('error');
-})->with([
-    ['GET', '/chat'],
-    ['POST', '/other'],
-]);
+});
+
+/**
+ * @param array<string, string> $headers
+ * @return array{status: int, headers: array<string, list<string>>, body: string}
+ */
+function rawRequest(string $method, string $body, array $headers = []): array
+{
+    $response = HttpClient::create()->request($method, AgentServer::shared()->url('/chat'), ['body' => $body, 'headers' => $headers]);
+
+    return ['status' => $response->getStatusCode(), 'headers' => $response->getHeaders(false), 'body' => $response->getContent(false)];
+}
+
+it('answers 405 with an Allow header for methods other than POST', function (): void {
+    $r = rawRequest('GET', '');
+
+    expect($r['status'])->toBe(405)
+        ->and($r['headers']['allow'] ?? [])->toBe(['POST']);
+});
+
+it('answers 415 when the body is not declared as JSON', function (string $contentType): void {
+    $r = rawRequest('POST', '{"session_id": "s", "message": "hi"}', ['Content-Type' => $contentType]);
+
+    expect($r['status'])->toBe(415);
+})->with(['text/plain', 'application/x-www-form-urlencoded', 'application/jsonp']);
+
+it('accepts application/json with a charset parameter', function (): void {
+    $r = rawRequest('POST', '{"session_id": "s", "message": "hi"}', ['Content-Type' => 'Application/JSON; charset=utf-8']);
+
+    expect($r['status'])->toBe(200);
+});
+
+it('answers 413 for a body larger than 16 KiB', function (): void {
+    $big = json_encode(['session_id' => 's', 'message' => str_repeat('a', 16_384)], JSON_THROW_ON_ERROR);
+    $r = rawRequest('POST', $big, ['Content-Type' => 'application/json']);
+
+    expect($r['status'])->toBe(413);
+});
+
+it('accepts a body of exactly 16 KiB', function (): void {
+    $prefix = '{"session_id": "s", "message": "';
+    $suffix = '"}';
+    $body = $prefix . str_repeat('a', 16_384 - strlen($prefix) - strlen($suffix)) . $suffix;
+    expect(strlen($body))->toBe(16_384);
+
+    expect(rawRequest('POST', $body, ['Content-Type' => 'application/json'])['status'])->toBe(200);
+});
+
+it('escapes HTML characters in JSON and sends nosniff', function (): void {
+    $r = rawRequest('POST', '{"session_id": "s", "message": "<script>alert(1)</script> book under O\'Hara & co"}', ['Content-Type' => 'application/json']);
+
+    expect($r['body'])->not->toContain('<')
+        ->and($r['body'])->not->toContain('>')
+        ->and($r['headers']['x-content-type-options'] ?? [])->toBe(['nosniff']);
+});
+
+it('stores session state under a hash of the session id, never the raw id', function (): void {
+    $session = '../../escape-' . bin2hex(random_bytes(4));
+    chat(AgentServer::shared()->url(), $session, 'table for 2');
+
+    $expected = sys_get_temp_dir() . '/trattoria-demo-' . hash('sha256', $session) . '.json';
+    expect(is_file($expected))->toBeTrue();
+    unlink($expected);
+});

@@ -91,8 +91,8 @@ it('loads a file and reports missing files and invalid YAML', function (): void 
 
     $loader = new ConfigLoader();
     expect($loader->load("{$dir}/ok.yaml")->url)->toBe('http://127.0.0.1:8787/chat')
-        ->and(fn() => $loader->load("{$dir}/missing.yaml"))->toThrow(InvalidArgumentException::class, 'Config file does not exist')
-        ->and(fn() => $loader->load("{$dir}/bad.yaml"))->toThrow(InvalidConfigException::class, 'invalid YAML');
+        ->and(fn(): \Desemax\AgentHarness\Config\HarnessConfig => $loader->load("{$dir}/missing.yaml"))->toThrow(InvalidArgumentException::class, 'Config file does not exist')
+        ->and(fn(): \Desemax\AgentHarness\Config\HarnessConfig => $loader->load("{$dir}/bad.yaml"))->toThrow(InvalidConfigException::class, 'invalid YAML');
 });
 
 describe('llm section', function (): void {

@@ -11,6 +11,9 @@ use RuntimeException;
  */
 final class AgentServer
 {
+    /** The server of the running test, set by startShared(). */
+    private static ?self $shared = null;
+
     /** @var resource */
     private $process;
 
@@ -51,6 +54,37 @@ final class AgentServer
         $server->stop();
 
         throw new RuntimeException("Server for {$docroot} did not start within 5 seconds.");
+    }
+
+    /**
+     * Starts the server shared by the tests of a file or describe block (call it in beforeEach).
+     */
+    public static function startShared(string $docroot): self
+    {
+        self::$shared = self::start($docroot);
+
+        return self::$shared;
+    }
+
+    /**
+     * The server started by startShared() for the running test.
+     */
+    public static function shared(): self
+    {
+        if (!self::$shared instanceof \Desemax\AgentHarness\Tests\Support\AgentServer) {
+            throw new RuntimeException('No shared server: call AgentServer::startShared() in beforeEach.');
+        }
+
+        return self::$shared;
+    }
+
+    /**
+     * Stops the shared server, if any (call it in afterEach).
+     */
+    public static function stopShared(): void
+    {
+        self::$shared?->stop();
+        self::$shared = null;
     }
 
     /**

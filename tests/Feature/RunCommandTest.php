@@ -22,15 +22,15 @@ function runScenarios(string $path, array $options = [], bool $verbose = false):
 
 describe('against the demo agent', function (): void {
     beforeEach(function (): void {
-        $this->server = AgentServer::start(projectRoot() . '/examples/demo-agent/public');
+        AgentServer::startShared(projectRoot() . '/examples/demo-agent/public');
     });
 
     afterEach(function (): void {
-        $this->server->stop();
+        AgentServer::stopShared();
     });
 
     it('passes 4 and fails the 2 intended scenarios with reasons, exit 1', function (): void {
-        $tester = runScenarios(projectRoot() . '/examples/scenarios', ['--url' => $this->server->url('/chat')]);
+        $tester = runScenarios(projectRoot() . '/examples/scenarios', ['--url' => AgentServer::shared()->url('/chat')]);
         $display = $tester->getDisplay();
 
         expect($tester->getStatusCode())->toBe(1)
@@ -49,7 +49,7 @@ describe('against the demo agent', function (): void {
     it('writes the HTML, JUnit and transcript reports', function (): void {
         $dir = sys_get_temp_dir() . '/agent-harness-reports-' . bin2hex(random_bytes(4));
         $tester = runScenarios(projectRoot() . '/examples/scenarios', [
-            '--url' => $this->server->url('/chat'),
+            '--url' => AgentServer::shared()->url('/chat'),
             '--report-html' => $dir . '/report.html',
             '--report-junit' => $dir . '/junit/report.xml',
             '--transcripts' => $dir . '/transcripts',
@@ -57,7 +57,8 @@ describe('against the demo agent', function (): void {
 
         $junit = new DOMDocument();
         $junit->load($dir . '/junit/report.xml');
-        $transcripts = glob($dir . '/transcripts/*.json') ?: [];
+        $transcripts = glob($dir . '/transcripts/*.json');
+        $transcripts = $transcripts === false ? [] : $transcripts;
         sort($transcripts);
 
         expect($tester->getStatusCode())->toBe(1)
@@ -67,7 +68,7 @@ describe('against the demo agent', function (): void {
             ->and((string) file_get_contents($dir . '/report.html'))->toContain('Allergen question is not answered with invented claims')
             ->and($junit->getElementsByTagName('testcase')->length)->toBe(6)
             ->and($junit->getElementsByTagName('failure')->length)->toBe(2)
-            ->and(array_map('basename', $transcripts))->toBe([
+            ->and(array_map(basename(...), $transcripts))->toBe([
                 'allergen-question-is-not-answered-with-invented-claims.json',
                 'happy-path-booking.json',
                 'large-party-goes-to-staff.json',
@@ -80,7 +81,7 @@ describe('against the demo agent', function (): void {
     });
 
     it('runs only the filtered scenario and exits 0', function (): void {
-        $tester = runScenarios(projectRoot() . '/examples/scenarios', ['--url' => $this->server->url('/chat'), '--filter' => 'happy']);
+        $tester = runScenarios(projectRoot() . '/examples/scenarios', ['--url' => AgentServer::shared()->url('/chat'), '--filter' => 'happy']);
 
         expect($tester->getStatusCode())->toBe(0)
             ->and($tester->getDisplay())->toContain('PASS   Happy path booking')
@@ -88,7 +89,7 @@ describe('against the demo agent', function (): void {
     });
 
     it('prints expectation results and the transcript with -v', function (): void {
-        $display = runScenarios(projectRoot() . '/examples/scenarios', ['--url' => $this->server->url('/chat'), '--filter' => 'allergen'], true)->getDisplay();
+        $display = runScenarios(projectRoot() . '/examples/scenarios', ['--url' => AgentServer::shared()->url('/chat'), '--filter' => 'allergen'], true)->getDisplay();
 
         expect($display)->toContain('~ judge: skipped (no llm configured in harness.yaml)')
             ->and($display)->toContain('Transcript:')
@@ -102,7 +103,7 @@ describe('against the demo agent', function (): void {
             escapeshellarg(PHP_BINARY),
             escapeshellarg(projectRoot() . '/bin/agent-harness'),
             escapeshellarg(projectRoot() . '/examples/scenarios'),
-            escapeshellarg($this->server->url('/chat')),
+            escapeshellarg(AgentServer::shared()->url('/chat')),
         ), $out, $exit);
 
         expect($exit)->toBe(1)->and(implode("\n", $out))->toContain('4 passed, 2 failed');
@@ -151,7 +152,7 @@ it('exits 2 with the validate output when a scenario is invalid', function (): v
 });
 
 it('exits 2 on bad input', function (array $options, string $message, string $path = 'examples/scenarios'): void {
-    $tester = runScenarios(projectRoot() . '/' . $path, $options);
+    $tester = runScenarios(projectRoot() . '/' . $path, stringKeyed($options));
 
     expect($tester->getStatusCode())->toBe(2)->and($tester->getDisplay())->toContain($message);
 })->with([
@@ -192,11 +193,11 @@ it('reads ./harness.yaml from the working directory by default', function (): vo
 
 describe('with an llm section', function (): void {
     beforeEach(function (): void {
-        $this->server = AgentServer::start(projectRoot() . '/examples/demo-agent/public');
+        AgentServer::startShared(projectRoot() . '/examples/demo-agent/public');
     });
 
     afterEach(function (): void {
-        $this->server->stop();
+        AgentServer::stopShared();
     });
 
     it('plays the LLM user and asks the judge through the configured client', function (): void {
@@ -205,7 +206,7 @@ describe('with an llm section', function (): void {
         $tester->execute([
             'path' => fixture('llm/scenarios'),
             '--config' => fixture('llm/harness.yaml'),
-            '--url' => $this->server->url('/chat'),
+            '--url' => AgentServer::shared()->url('/chat'),
         ], ['verbosity' => OutputInterface::VERBOSITY_VERBOSE]);
         $display = $tester->getDisplay();
 
@@ -218,7 +219,7 @@ describe('with an llm section', function (): void {
 
     it('exits 2 with a clear message when the API key variable is not set', function (): void {
         putenv('HARNESS_TEST_UNSET_KEY');
-        $tester = runScenarios(fixture('llm/scenarios'), ['--config' => fixture('llm/harness.yaml'), '--url' => $this->server->url('/chat')]);
+        $tester = runScenarios(fixture('llm/scenarios'), ['--config' => fixture('llm/harness.yaml'), '--url' => AgentServer::shared()->url('/chat')]);
 
         expect($tester->getStatusCode())->toBe(2)
             ->and($tester->getDisplay())->toContain('Environment variable HARNESS_TEST_UNSET_KEY is not set.')
@@ -229,7 +230,7 @@ describe('with an llm section', function (): void {
         putenv('HARNESS_TEST_UNSET_KEY');
         $tester = runScenarios(projectRoot() . '/examples/scenarios', [
             '--config' => fixture('llm/harness.yaml'),
-            '--url' => $this->server->url('/chat'),
+            '--url' => AgentServer::shared()->url('/chat'),
             '--filter' => 'happy',
         ]);
 
@@ -254,12 +255,16 @@ it('passes the seed to the LLM', function (): void {
 it('reports a flaky scenario, counts it as a pass and exits 0', function (): void {
     $server = AgentServer::start(fixture('flaky-agent'));
     $counter = sys_get_temp_dir() . '/agent-harness-flaky-' . $server->port;
-    is_file($counter) && unlink($counter);
+    if (is_file($counter)) {
+        unlink($counter);
+    }
     try {
         $tester = runScenarios(fixture('flaky-agent/scenarios'), ['--url' => $server->url('/'), '--retries' => '2']);
     } finally {
         $server->stop();
-        is_file($counter) && unlink($counter);
+        if (is_file($counter)) {
+            unlink($counter);
+        }
     }
     $display = $tester->getDisplay();
 
@@ -270,7 +275,7 @@ it('reports a flaky scenario, counts it as a pass and exits 0', function (): voi
 });
 
 it('rejects bad --seed and --retries values', function (array $options, string $message): void {
-    $tester = runScenarios(projectRoot() . '/examples/scenarios', ['--url' => 'http://x/chat'] + $options);
+    $tester = runScenarios(projectRoot() . '/examples/scenarios', ['--url' => 'http://x/chat'] + stringKeyed($options));
 
     expect($tester->getStatusCode())->toBe(2)->and($tester->getDisplay())->toContain($message);
 })->with([

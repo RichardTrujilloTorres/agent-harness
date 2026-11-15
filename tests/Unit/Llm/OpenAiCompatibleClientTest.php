@@ -33,7 +33,7 @@ it('posts a chat completion request and returns the content', function (): void 
         ->and($response->getRequestMethod())->toBe('POST')
         ->and($response->getRequestUrl())->toBe('http://llm.test/v1/chat/completions')
         ->and($headers)->toContain('Authorization: Bearer secret-key')
-        ->and(json_decode((string) $response->getRequestOptions()['body'], true))->toBe([
+        ->and(requestJson($response))->toBe([
             'model' => 'test-model',
             'messages' => [['role' => 'system', 'content' => 'Be brief.'], ['role' => 'user', 'content' => 'Hi']],
             'temperature' => 0.0,
@@ -44,7 +44,7 @@ it('sends max_tokens, seed and json mode when set', function (): void {
     $response = completion('{}');
 
     llmClientFor($response, 300)->complete('s', [['role' => 'user', 'content' => 'x']], new LlmOptions(temperature: 0.7, seed: 42, jsonMode: true));
-    $body = json_decode((string) $response->getRequestOptions()['body'], true);
+    $body = requestJson($response);
 
     expect($body['temperature'])->toBe(0.7)
         ->and($body['max_tokens'])->toBe(300)
@@ -57,11 +57,11 @@ it('prefers max tokens from the options over the config', function (): void {
 
     llmClientFor($response, 300)->complete('s', [], new LlmOptions(maxTokens: 50));
 
-    expect(json_decode((string) $response->getRequestOptions()['body'], true)['max_tokens'])->toBe(50);
+    expect(requestJson($response)['max_tokens'])->toBe(50);
 });
 
 it('throws a typed exception for errors', function (MockResponse|Closure $response, string $message): void {
-    expect(fn() => llmClientFor($response)->complete('s', [], new LlmOptions()))
+    expect(fn(): string => llmClientFor($response)->complete('s', [], new LlmOptions()))
         ->toThrow(LlmException::class, $message);
 })->with([
     'HTTP error' => [new MockResponse('{"error":"rate limited"}', ['http_code' => 429]), 'answered HTTP 429: {"error":"rate limited"}'],
@@ -87,6 +87,6 @@ it('reads the API key from the named environment variable', function (): void {
 it('explains a missing API key environment variable', function (): void {
     putenv('HARNESS_TEST_MISSING_KEY');
 
-    expect(fn() => OpenAiCompatibleClient::fromConfig(new LlmConfig('http://llm.test/v1', 'm', 'HARNESS_TEST_MISSING_KEY')))
+    expect(fn(): \Desemax\AgentHarness\Llm\OpenAiCompatibleClient => OpenAiCompatibleClient::fromConfig(new LlmConfig('http://llm.test/v1', 'm', 'HARNESS_TEST_MISSING_KEY')))
         ->toThrow(LlmException::class, 'Environment variable HARNESS_TEST_MISSING_KEY is not set.');
 });
