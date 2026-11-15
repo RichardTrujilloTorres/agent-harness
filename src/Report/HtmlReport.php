@@ -12,6 +12,9 @@ use Desemax\AgentHarness\Runner\SuiteResult;
 
 /**
  * One self-contained HTML file: inline CSS, no scripts, no external assets.
+ *
+ * Every piece of text is escaped for HTML text and attribute contexts, and a Content-Security-Policy
+ * allows nothing but the report's own stylesheet (by hash), so injected markup could not load or run anything.
  */
 final class HtmlReport
 {
@@ -41,7 +44,8 @@ final class HtmlReport
         .c-error { color: var(--error); } .c-flaky { color: var(--flaky); }
         ul.expect { list-style: none; padding: 0; margin: 0; }
         ul.expect li { padding: 2px 0; }
-        ul.expect .mark { display: inline-block; width: 1.4em; font-weight: 700; }
+        ul.expect .mark, ul.warnings .mark { display: inline-block; width: 1.4em; font-weight: 700; }
+        ul.warnings { list-style: none; padding: 0; margin: 0; }
         .message { margin: 8px 0 0; }
         .turn { border-left: 3px solid var(--border); padding: 4px 0 4px 12px; margin: 8px 0; }
         .who { font-weight: 600; display: inline-block; min-width: 3.5em; }
@@ -73,6 +77,8 @@ final class HtmlReport
             . '<meta charset="utf-8">' . "\n"
             . '<meta name="viewport" content="width=device-width, initial-scale=1">' . "\n"
             . '<meta name="color-scheme" content="light dark">' . "\n"
+            . '<meta http-equiv="Content-Security-Policy" content="' . $this->e(self::csp()) . '">' . "\n"
+            . '<meta name="referrer" content="no-referrer">' . "\n"
             . '<title>agent-harness report</title>' . "\n"
             . '<style>' . "\n" . self::CSS . "\n" . '</style>' . "\n"
             . '</head>' . "\n"
@@ -108,6 +114,15 @@ final class HtmlReport
 
         if ($data['message'] !== null) {
             $html[] = '<p class="message">' . $this->e($data['message']) . '</p>';
+        }
+
+        if ($data['warnings'] !== []) {
+            $html[] = '<h3>Warnings</h3>';
+            $html[] = '<ul class="warnings">';
+            foreach ($data['warnings'] as $warning) {
+                $html[] = '<li class="c-skipped"><span class="mark">⚠</span><span class="text">' . $this->e($warning) . '</span></li>';
+            }
+            $html[] = '</ul>';
         }
 
         if ($data['expectations'] !== []) {
@@ -148,6 +163,17 @@ final class HtmlReport
         $html[] = '</section>';
 
         return implode("\n", $html);
+    }
+
+    /**
+     * default-src 'none' and the hash of the inline stylesheet: no scripts, no remote resources, no forms.
+     */
+    public static function csp(): string
+    {
+        return sprintf(
+            "default-src 'none'; style-src 'sha256-%s'; img-src 'none'; base-uri 'none'; form-action 'none'",
+            base64_encode(hash('sha256', "\n" . self::CSS . "\n", true)),
+        );
     }
 
     private function e(string $text): string

@@ -55,12 +55,23 @@ final class JunitReport
     private function testcase(DOMDocument $doc, ScenarioResult $result): DOMElement
     {
         $case = $doc->createElement('testcase');
-        $case->setAttribute('name', $result->scenario->name);
-        $case->setAttribute('classname', $result->scenario->file ?? self::SUITE_NAME);
+        $case->setAttribute('name', self::xml($result->scenario->name));
+        $case->setAttribute('classname', self::xml($result->scenario->file ?? self::SUITE_NAME));
         if ($result->scenario->file !== null) {
-            $case->setAttribute('file', $result->scenario->file);
+            $case->setAttribute('file', self::xml($result->scenario->file));
         }
         $case->setAttribute('time', $this->seconds($result->durationMs));
+
+        if ($result->warnings !== []) {
+            $properties = $doc->createElement('properties');
+            foreach ($result->warnings as $warning) {
+                $property = $doc->createElement('property');
+                $property->setAttribute('name', 'warning');
+                $property->setAttribute('value', self::xml($warning));
+                $properties->appendChild($property);
+            }
+            $case->appendChild($properties);
+        }
 
         switch ($result->status) {
             case ScenarioStatus::Failed:
@@ -74,7 +85,7 @@ final class JunitReport
                 break;
             case ScenarioStatus::Skipped:
                 $skipped = $doc->createElement('skipped');
-                $skipped->setAttribute('message', $result->message ?? 'nothing could be checked');
+                $skipped->setAttribute('message', self::xml($result->message ?? 'nothing could be checked'));
                 $case->appendChild($skipped);
                 break;
             case ScenarioStatus::Passed:
@@ -83,8 +94,14 @@ final class JunitReport
         }
 
         $out = $doc->createElement('system-out');
-        $out->appendChild($doc->createTextNode($this->transcript($result)));
+        $out->appendChild($doc->createTextNode(self::xml($this->transcript($result))));
         $case->appendChild($out);
+
+        if ($result->warnings !== []) {
+            $err = $doc->createElement('system-err');
+            $err->appendChild($doc->createTextNode(self::xml(implode("\n", $result->warnings))));
+            $case->appendChild($err);
+        }
 
         return $case;
     }
@@ -100,9 +117,9 @@ final class JunitReport
     private function problem(DOMDocument $doc, string $tag, string $message, string $details): DOMElement
     {
         $el = $doc->createElement($tag);
-        $el->setAttribute('message', $message);
+        $el->setAttribute('message', self::xml($message));
         $el->setAttribute('type', $tag === 'failure' ? 'ExpectationFailed' : 'ScenarioError');
-        $el->appendChild($doc->createTextNode($details));
+        $el->appendChild($doc->createTextNode(self::xml($details)));
 
         return $el;
     }
@@ -120,5 +137,16 @@ final class JunitReport
     private function seconds(int $ms): string
     {
         return number_format($ms / 1000, 3, '.', '');
+    }
+
+    /**
+     * Text that is legal in XML 1.0: invalid UTF-8 and characters outside the XML Char range
+     * (most control characters, lone surrogates, U+FFFE/U+FFFF) become U+FFFD.
+     */
+    public static function xml(string $text): string
+    {
+        $text = mb_scrub($text, 'UTF-8');
+
+        return (string) preg_replace('/[^\x{9}\x{A}\x{D}\x{20}-\x{D7FF}\x{E000}-\x{FFFD}\x{10000}-\x{10FFFF}]/u', "\u{FFFD}", $text);
     }
 }

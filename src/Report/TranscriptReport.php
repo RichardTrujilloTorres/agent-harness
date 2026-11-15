@@ -35,6 +35,7 @@ final class TranscriptReport
         ReportWriter::directory($dir);
         $paths = [];
         foreach ($this->render($suite) as $name => $json) {
+            // $name is a slug ([a-z0-9-] plus ".json"): it cannot contain a separator or "..".
             $path = rtrim($dir, '/\\') . DIRECTORY_SEPARATOR . $name;
             ReportWriter::write($path, $json);
             $paths[] = $path;

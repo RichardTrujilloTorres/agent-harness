@@ -120,7 +120,8 @@ describe('HTML', function (): void {
             ->and($html)->toContain('<code>create_booking</code>')
             ->and($html)->toContain('<strong>handoff</strong>')
             ->and($html)->toContain('Turn 1 · 12 ms')
-            ->and($html)->not->toContain('http-equiv')
+            ->and($html)->not->toContain('http-equiv="refresh"')
+            ->and($html)->not->toMatch('/(src|href|url\()\s*=?\s*["\x27(]?\s*(https?:)?\/\//i')
             ->and($html)->not->toMatch('/(src|href)=/');
     });
 
