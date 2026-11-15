@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace Desemax\AgentHarness\Llm;
 
+use Desemax\AgentHarness\Security\BodyTooLargeException;
+use Desemax\AgentHarness\Security\BoundedHttp;
 use JsonException;
+use Override;
+use SensitiveParameter;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -18,7 +22,7 @@ final readonly class OpenAiCompatibleClient implements LlmClient
 
     public function __construct(
         private LlmConfig $config,
-        #[\SensitiveParameter]
+        #[SensitiveParameter]
         private string $apiKey,
         ?HttpClientInterface $client = null,
     ) {
@@ -43,7 +47,7 @@ final readonly class OpenAiCompatibleClient implements LlmClient
         return new self($config, trim($key), $client);
     }
 
-    #[\Override]
+    #[Override]
     public function complete(string $system, array $messages, LlmOptions $options): string
     {
         $url = rtrim($this->config->baseUrl, '/') . '/chat/completions';
@@ -62,21 +66,25 @@ final readonly class OpenAiCompatibleClient implements LlmClient
         if ($options->jsonMode) {
             $payload['response_format'] = ['type' => 'json_object'];
         }
-        $seconds = $this->config->timeoutMs / 1000;
 
         try {
-            $response = $this->client->request('POST', $url, [
-                'json' => $payload,
-                'headers' => ['Accept' => 'application/json', 'Authorization' => 'Bearer ' . $this->apiKey],
-                'timeout' => $seconds,
-                'max_duration' => $seconds,
-            ]);
-            $status = $response->getStatusCode();
-            $body = $response->getContent(false);
+            ['status' => $status, 'body' => $body] = (new BoundedHttp($this->client))->postJson(
+                $url,
+                $payload,
+                ['Accept' => 'application/json', 'Authorization' => 'Bearer ' . $this->apiKey],
+                $this->config->timeoutMs,
+                $this->config->maxResponseBytes,
+            );
+        } catch (BodyTooLargeException $e) {
+            throw new LlmException(sprintf('LLM at %s answered a %s; raise llm.max_response_bytes if this is expected', $url, $e->getMessage()), 0, $e);
         } catch (TransportExceptionInterface $e) {
-            throw new LlmException(sprintf('LLM at %s is unreachable: %s', $url, $e->getMessage()), 0, $e);
+            throw new LlmException($this->redact(sprintf('LLM at %s is unreachable: %s', $url, $e->getMessage())), 0, $e);
         }
+        $body = $this->redact($body);
 
+        if ($status >= 300 && $status < 400) {
+            throw new LlmException(sprintf('LLM at %s answered a redirect (HTTP %d); redirects are never followed for the LLM, set llm.base_url to the final address', $url, $status));
+        }
         if ($status < 200 || $status >= 300) {
             throw new LlmException(sprintf('LLM at %s answered HTTP %d: %s', $url, $status, self::excerpt($body)));
         }
@@ -110,6 +118,14 @@ final readonly class OpenAiCompatibleClient implements LlmClient
         }
 
         return $message['content'];
+    }
+
+    /**
+     * The API key never leaves this class, not even when a server echoes it back in an error.
+     */
+    private function redact(string $text): string
+    {
+        return str_replace($this->apiKey, '[REDACTED]', $text);
     }
 
     public static function excerpt(string $text, int $max = 200): string

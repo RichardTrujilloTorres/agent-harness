@@ -6,6 +6,7 @@ use Desemax\AgentHarness\Config\ConfigLoader;
 use Desemax\AgentHarness\Config\HarnessConfig;
 use Desemax\AgentHarness\Config\InvalidConfigException;
 use Desemax\AgentHarness\Llm\LlmConfig;
+use Desemax\AgentHarness\Scenario\ScenarioLoader;
 use Desemax\AgentHarness\Scenario\ValidationError;
 
 /**
@@ -68,9 +69,9 @@ it('collects every error with field paths', function (): void {
         'extra' => true,
     ]))->toBe([
         'extra: unknown field; allowed: agent, request, response, llm',
-        'agent.retries: unknown field; allowed: url, timeout_ms, headers',
+        'agent.retries: unknown field; allowed: url, timeout_ms, headers, follow_redirects, max_response_bytes',
         'request: must be a map',
-        'agent.url: must start with http:// or https://',
+        'agent.url: must be an http:// or https:// URL with a host, got "localhost"',
         'agent.timeout_ms: must be >= 1',
         'agent.headers.X: must be a string',
         'response.reply: must be a dot-path like "data.reply", got "a..b"',
@@ -91,8 +92,8 @@ it('loads a file and reports missing files and invalid YAML', function (): void 
 
     $loader = new ConfigLoader();
     expect($loader->load("{$dir}/ok.yaml")->url)->toBe('http://127.0.0.1:8787/chat')
-        ->and(fn(): \Desemax\AgentHarness\Config\HarnessConfig => $loader->load("{$dir}/missing.yaml"))->toThrow(InvalidArgumentException::class, 'Config file does not exist')
-        ->and(fn(): \Desemax\AgentHarness\Config\HarnessConfig => $loader->load("{$dir}/bad.yaml"))->toThrow(InvalidConfigException::class, 'invalid YAML');
+        ->and(fn(): HarnessConfig => $loader->load("{$dir}/missing.yaml"))->toThrow(InvalidArgumentException::class, 'Config file does not exist')
+        ->and(fn(): HarnessConfig => $loader->load("{$dir}/bad.yaml"))->toThrow(InvalidConfigException::class, 'invalid YAML');
 });
 
 describe('llm section', function (): void {
@@ -122,8 +123,8 @@ describe('llm section', function (): void {
 
     it('collects every error', function (): void {
         expect(configErrors(['llm' => ['base_url' => 'llm.test', 'api_key_env' => 'not a name', 'timeout_ms' => 0, 'max_tokens' => 'many', 'temperature' => 1]]))->toBe([
-            'llm.temperature: unknown field; allowed: base_url, model, api_key_env, timeout_ms, max_tokens',
-            'llm.base_url: must start with http:// or https://',
+            'llm.temperature: unknown field; allowed: base_url, model, api_key_env, timeout_ms, max_tokens, max_response_bytes',
+            'llm.base_url: must be an http:// or https:// URL with a host, got "llm.test"',
             'llm.model: required field is missing',
             'llm.api_key_env: must be an environment variable name like HARNESS_LLM_API_KEY, got "not a name"',
             'llm.timeout_ms: must be >= 1',
@@ -142,5 +143,5 @@ it('loads the commented example config for the LLM scenarios', function (): void
 
     expect($config->url)->toBe('http://127.0.0.1:8787/chat')
         ->and($config->llm?->apiKeyEnv)->toBe('HARNESS_LLM_API_KEY')
-        ->and((new Desemax\AgentHarness\Scenario\ScenarioLoader())->load(projectRoot() . '/examples/scenarios-llm/scenarios'))->toHaveCount(2);
+        ->and((new ScenarioLoader())->load(projectRoot() . '/examples/scenarios-llm/scenarios'))->toHaveCount(2);
 });

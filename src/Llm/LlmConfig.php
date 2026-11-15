@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Desemax\AgentHarness\Llm;
 
+use Desemax\AgentHarness\Security\BoundedHttp;
+
 /**
  * The llm section of harness.yaml. The API key itself is never stored, only the name of its environment variable.
  */
@@ -21,5 +23,6 @@ final readonly class LlmConfig
         public string $apiKeyEnv = self::DEFAULT_API_KEY_ENV,
         public int $timeoutMs = self::DEFAULT_TIMEOUT_MS,
         public ?int $maxTokens = null,
+        public int $maxResponseBytes = BoundedHttp::DEFAULT_MAX_RESPONSE_BYTES,
     ) {}
 }

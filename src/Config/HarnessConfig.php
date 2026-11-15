@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Desemax\AgentHarness\Config;
 
 use Desemax\AgentHarness\Llm\LlmConfig;
+use Desemax\AgentHarness\Security\BoundedHttp;
 
 final readonly class HarnessConfig
 {
@@ -26,6 +27,8 @@ final readonly class HarnessConfig
         public string $handoffPath = 'handoff',
         public ?string $file = null,
         public ?LlmConfig $llm = null,
+        public bool $followRedirects = false,
+        public int $maxResponseBytes = BoundedHttp::DEFAULT_MAX_RESPONSE_BYTES,
     ) {}
 
     public function withUrl(string $url): self
@@ -43,6 +46,8 @@ final readonly class HarnessConfig
             $this->handoffPath,
             $this->file,
             $this->llm,
+            $this->followRedirects,
+            $this->maxResponseBytes,
         );
     }
 }

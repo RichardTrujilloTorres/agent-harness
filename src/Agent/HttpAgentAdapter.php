@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace Desemax\AgentHarness\Agent;
 
 use Desemax\AgentHarness\Config\HarnessConfig;
+use Desemax\AgentHarness\Security\BodyTooLargeException;
+use Desemax\AgentHarness\Security\BoundedHttp;
 use InvalidArgumentException;
 use JsonException;
+use Override;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -30,27 +33,31 @@ final readonly class HttpAgentAdapter implements AgentAdapter
         if ($config->url === null) {
             throw new InvalidArgumentException('No agent URL configured: set agent.url in the config or pass --url.');
         }
+        if (!BoundedHttp::isHttpUrl($config->url)) {
+            throw new InvalidArgumentException(sprintf('Agent URL must be an http:// or https:// URL with a host, got "%s".', $config->url));
+        }
         $this->url = $config->url;
         $this->client = $client ?? HttpClient::create();
     }
 
-    #[\Override]
+    #[Override]
     public function send(string $sessionId, string $message): AgentReply
     {
         $payload = DotPath::set([], $this->config->sessionField, $sessionId);
         $payload = DotPath::set($payload, $this->config->messageField, $message);
-        $seconds = $this->config->timeoutMs / 1000;
 
         $start = hrtime(true);
         try {
-            $response = $this->client->request('POST', $this->url, [
-                'json' => $payload,
-                'headers' => ['Accept' => 'application/json'] + $this->config->headers,
-                'timeout' => $seconds,
-                'max_duration' => $seconds,
-            ]);
-            $status = $response->getStatusCode();
-            $body = $response->getContent(false);
+            ['status' => $status, 'body' => $body] = (new BoundedHttp($this->client))->postJson(
+                $this->url,
+                $payload,
+                ['Accept' => 'application/json'] + $this->config->headers,
+                $this->config->timeoutMs,
+                $this->config->maxResponseBytes,
+                $this->config->followRedirects,
+            );
+        } catch (BodyTooLargeException $e) {
+            throw new AgentException(sprintf('Agent at %s answered a %s; raise agent.max_response_bytes if this is expected', $this->url, $e->getMessage()), 0, $e);
         } catch (TransportExceptionInterface $e) {
             if (stripos($e->getMessage(), 'timeout') !== false || stripos($e->getMessage(), 'duration') !== false) {
                 throw new AgentException(sprintf('Agent at %s timed out after %d ms', $this->url, $this->config->timeoutMs), 0, $e);
@@ -60,6 +67,9 @@ final readonly class HttpAgentAdapter implements AgentAdapter
         }
         $latencyMs = (int) round((hrtime(true) - $start) / 1_000_000);
 
+        if ($status >= 300 && $status < 400) {
+            throw new AgentException(sprintf('Agent at %s answered a redirect (HTTP %d); redirects are not followed unless agent.follow_redirects is true', $this->url, $status));
+        }
         if ($status < 200 || $status >= 300) {
             throw new AgentException(sprintf('Agent at %s answered HTTP %d: %s', $this->url, $status, $this->excerpt($body)));
         }

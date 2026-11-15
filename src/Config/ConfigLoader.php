@@ -6,9 +6,10 @@ namespace Desemax\AgentHarness\Config;
 
 use Desemax\AgentHarness\Llm\LlmConfig;
 use Desemax\AgentHarness\Scenario\ValidationError;
+use Desemax\AgentHarness\Scenario\YamlException;
+use Desemax\AgentHarness\Scenario\YamlReader;
+use Desemax\AgentHarness\Security\BoundedHttp;
 use InvalidArgumentException;
-use Symfony\Component\Yaml\Exception\ParseException;
-use Symfony\Component\Yaml\Yaml;
 
 /**
  * Loads harness.yaml and validates it, collecting every error found.
@@ -18,10 +19,10 @@ final class ConfigLoader
     public const string DEFAULT_FILE = 'harness.yaml';
 
     private const array SECTIONS = [
-        'agent' => ['url', 'timeout_ms', 'headers'],
+        'agent' => ['url', 'timeout_ms', 'headers', 'follow_redirects', 'max_response_bytes'],
         'request' => ['session_field', 'message_field'],
         'response' => ['reply', 'tool_calls', 'tool_name', 'tool_arguments', 'handoff'],
-        'llm' => ['base_url', 'model', 'api_key_env', 'timeout_ms', 'max_tokens'],
+        'llm' => ['base_url', 'model', 'api_key_env', 'timeout_ms', 'max_tokens', 'max_response_bytes'],
     ];
 
     /** @var list<ValidationError> */
@@ -40,9 +41,9 @@ final class ConfigLoader
         }
 
         try {
-            $data = Yaml::parseFile($file);
-        } catch (ParseException $e) {
-            throw new InvalidConfigException([new ValidationError($file, '(root)', 'invalid YAML: ' . $e->getMessage())]);
+            $data = (new YamlReader())->read($file);
+        } catch (YamlException $e) {
+            throw new InvalidConfigException([new ValidationError($file, '(root)', $e->getMessage())]);
         }
 
         return $this->fromArray($data ?? [], $file);
@@ -74,9 +75,19 @@ final class ConfigLoader
 
         $agent = $sections['agent'];
         $url = $this->optionalString($agent, 'url', 'agent.url');
-        if ($url !== null && preg_match('#^https?://#i', $url) !== 1) {
-            $this->error('agent.url', 'must start with http:// or https://');
+        if ($url !== null && !BoundedHttp::isHttpUrl($url)) {
+            $this->error('agent.url', sprintf('must be an http:// or https:// URL with a host, got "%s"', $url));
         }
+
+        $followRedirects = false;
+        if (array_key_exists('follow_redirects', $agent) && $agent['follow_redirects'] !== null) {
+            if (!is_bool($agent['follow_redirects'])) {
+                $this->error('agent.follow_redirects', 'must be true or false');
+            } else {
+                $followRedirects = $agent['follow_redirects'];
+            }
+        }
+        $maxResponseBytes = $this->positiveInt($agent, 'max_response_bytes', 'agent.max_response_bytes') ?? BoundedHttp::DEFAULT_MAX_RESPONSE_BYTES;
 
         $timeout = $this->positiveInt($agent, 'timeout_ms', 'agent.timeout_ms') ?? HarnessConfig::DEFAULT_TIMEOUT_MS;
 
@@ -111,6 +122,8 @@ final class ConfigLoader
             handoffPath: $this->path($response, 'handoff', 'response', 'handoff'),
             file: $file,
             llm: $this->llm($data, $sections['llm']),
+            followRedirects: $followRedirects,
+            maxResponseBytes: $maxResponseBytes,
         );
 
         if ($config->sessionField === $config->messageField) {
@@ -139,8 +152,8 @@ final class ConfigLoader
         $baseUrl = $this->optionalString($llm, 'base_url', 'llm.base_url');
         if (!array_key_exists('base_url', $llm)) {
             $this->error('llm.base_url', 'required field is missing');
-        } elseif ($baseUrl !== null && preg_match('#^https?://#i', $baseUrl) !== 1) {
-            $this->error('llm.base_url', 'must start with http:// or https://');
+        } elseif ($baseUrl !== null && !BoundedHttp::isHttpUrl($baseUrl)) {
+            $this->error('llm.base_url', sprintf('must be an http:// or https:// URL with a host, got "%s"', $baseUrl));
             $baseUrl = null;
         }
 
@@ -156,12 +169,13 @@ final class ConfigLoader
 
         $timeout = $this->positiveInt($llm, 'timeout_ms', 'llm.timeout_ms') ?? LlmConfig::DEFAULT_TIMEOUT_MS;
         $maxTokens = $this->positiveInt($llm, 'max_tokens', 'llm.max_tokens');
+        $maxResponseBytes = $this->positiveInt($llm, 'max_response_bytes', 'llm.max_response_bytes') ?? BoundedHttp::DEFAULT_MAX_RESPONSE_BYTES;
 
         if ($baseUrl === null || $model === null) {
             return null;
         }
 
-        return new LlmConfig($baseUrl, $model, $apiKeyEnv, $timeout, $maxTokens);
+        return new LlmConfig($baseUrl, $model, $apiKeyEnv, $timeout, $maxTokens, $maxResponseBytes);
     }
 
     /**

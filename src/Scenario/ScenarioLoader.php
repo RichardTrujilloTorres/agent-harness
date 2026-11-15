@@ -6,16 +6,16 @@ namespace Desemax\AgentHarness\Scenario;
 
 use FilesystemIterator;
 use InvalidArgumentException;
+use LogicException;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
-use Symfony\Component\Yaml\Exception\ParseException;
-use Symfony\Component\Yaml\Yaml;
 
 final readonly class ScenarioLoader
 {
     public function __construct(
         private ScenarioValidator $validator = new ScenarioValidator(),
+        private YamlReader $yaml = new YamlReader(),
     ) {}
 
     /**
@@ -88,8 +88,8 @@ final readonly class ScenarioLoader
     {
         try {
             $data = $this->parse($file);
-        } catch (ParseException $e) {
-            return [new ValidationError($file, '(root)', 'invalid YAML: ' . $e->getMessage())];
+        } catch (YamlException $e) {
+            return [new ValidationError($file, '(root)', $e->getMessage())];
         }
 
         return $this->validator->validate($data, $file);
@@ -97,7 +97,7 @@ final readonly class ScenarioLoader
 
     private function parse(string $file): mixed
     {
-        return Yaml::parseFile($file);
+        return $this->yaml->read($file);
     }
 
     private function hydrate(mixed $data, string $file): Scenario
@@ -142,7 +142,7 @@ final readonly class ScenarioLoader
     private function map(mixed $value): array
     {
         if (!is_array($value)) {
-            throw new \LogicException('Expected a map in validated scenario data.');
+            throw new LogicException('Expected a map in validated scenario data.');
         }
 
         $map = [];
@@ -159,7 +159,7 @@ final readonly class ScenarioLoader
     private function list(mixed $value): array
     {
         if (!is_array($value)) {
-            throw new \LogicException('Expected a list in validated scenario data.');
+            throw new LogicException('Expected a list in validated scenario data.');
         }
 
         return array_values($value);
@@ -168,7 +168,7 @@ final readonly class ScenarioLoader
     private function string(mixed $value): string
     {
         if (!is_string($value)) {
-            throw new \LogicException('Expected a string in validated scenario data.');
+            throw new LogicException('Expected a string in validated scenario data.');
         }
 
         return $value;
@@ -177,7 +177,7 @@ final readonly class ScenarioLoader
     private function int(mixed $value): int
     {
         if (!is_int($value)) {
-            throw new \LogicException('Expected an integer in validated scenario data.');
+            throw new LogicException('Expected an integer in validated scenario data.');
         }
 
         return $value;
@@ -186,7 +186,7 @@ final readonly class ScenarioLoader
     private function scalar(mixed $value): string|int|bool
     {
         if (!is_string($value) && !is_int($value) && !is_bool($value)) {
-            throw new \LogicException('Expected a scalar in validated scenario data.');
+            throw new LogicException('Expected a scalar in validated scenario data.');
         }
 
         return $value;
