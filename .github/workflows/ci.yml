@@ -29,3 +29,9 @@ jobs:
       - run: vendor/bin/phpstan analyse --no-progress
 
       - run: bin/agent-harness validate examples/scenarios
+
+      - name: Demo run (2 scenarios fail on purpose, so exit 1 is expected)
+        run: |
+          php -S 127.0.0.1:8787 -t examples/demo-agent/public > /dev/null 2>&1 &
+          for i in $(seq 1 50); do nc -z 127.0.0.1 8787 && break; sleep 0.1; done
+          bin/agent-harness run examples/scenarios --url http://127.0.0.1:8787/chat || test $? -eq 1
