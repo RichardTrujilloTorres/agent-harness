@@ -7,6 +7,7 @@ namespace Desemax\AgentHarness\Assertion;
 use Desemax\AgentHarness\Runner\ExpectationResult;
 use Desemax\AgentHarness\Runner\Transcript;
 use Desemax\AgentHarness\Scenario\Expectation;
+use Override;
 
 /**
  * handoff: whether any turn handed off equals the expected bool.
@@ -15,7 +16,7 @@ final class HandoffEvaluator implements Evaluator
 {
     use PayloadReader;
 
-    #[\Override]
+    #[Override]
     public function evaluate(Expectation $expectation, Transcript $transcript): ExpectationResult
     {
         $expected = $this->boolPayload($expectation);

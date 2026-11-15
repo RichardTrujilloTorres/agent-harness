@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Desemax\AgentHarness\Scenario;
 
-final readonly class ValidationError implements \Stringable
+use Override;
+use Stringable;
+
+final readonly class ValidationError implements Stringable
 {
     public function __construct(
         public string $file,
@@ -12,7 +15,7 @@ final readonly class ValidationError implements \Stringable
         public string $reason,
     ) {}
 
-    #[\Override]
+    #[Override]
     public function __toString(): string
     {
         return sprintf('%s: %s: %s', $this->file, $this->path, $this->reason);

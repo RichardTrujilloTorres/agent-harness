@@ -71,7 +71,7 @@ final class AgentServer
      */
     public static function shared(): self
     {
-        if (!self::$shared instanceof \Desemax\AgentHarness\Tests\Support\AgentServer) {
+        if (!self::$shared instanceof AgentServer) {
             throw new RuntimeException('No shared server: call AgentServer::startShared() in beforeEach.');
         }
 

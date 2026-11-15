@@ -7,6 +7,7 @@ namespace Desemax\AgentHarness\Assertion;
 use Desemax\AgentHarness\Runner\ExpectationResult;
 use Desemax\AgentHarness\Runner\Transcript;
 use Desemax\AgentHarness\Scenario\Expectation;
+use Override;
 
 /**
  * never_said: no agent reply contains the text (case-insensitive).
@@ -15,7 +16,7 @@ final class NeverSaidEvaluator implements Evaluator
 {
     use PayloadReader;
 
-    #[\Override]
+    #[Override]
     public function evaluate(Expectation $expectation, Transcript $transcript): ExpectationResult
     {
         $text = $this->stringPayload($expectation);

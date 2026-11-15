@@ -87,6 +87,6 @@ it('reads the API key from the named environment variable', function (): void {
 it('explains a missing API key environment variable', function (): void {
     putenv('HARNESS_TEST_MISSING_KEY');
 
-    expect(fn(): \Desemax\AgentHarness\Llm\OpenAiCompatibleClient => OpenAiCompatibleClient::fromConfig(new LlmConfig('http://llm.test/v1', 'm', 'HARNESS_TEST_MISSING_KEY')))
+    expect(fn(): OpenAiCompatibleClient => OpenAiCompatibleClient::fromConfig(new LlmConfig('http://llm.test/v1', 'm', 'HARNESS_TEST_MISSING_KEY')))
         ->toThrow(LlmException::class, 'Environment variable HARNESS_TEST_MISSING_KEY is not set.');
 });

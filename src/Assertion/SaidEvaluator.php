@@ -6,7 +6,9 @@ namespace Desemax\AgentHarness\Assertion;
 
 use Desemax\AgentHarness\Runner\ExpectationResult;
 use Desemax\AgentHarness\Runner\Transcript;
+use Desemax\AgentHarness\Runner\Turn;
 use Desemax\AgentHarness\Scenario\Expectation;
+use Override;
 
 /**
  * said: some agent reply contains the text (case-insensitive).
@@ -15,7 +17,7 @@ final class SaidEvaluator implements Evaluator
 {
     use PayloadReader;
 
-    #[\Override]
+    #[Override]
     public function evaluate(Expectation $expectation, Transcript $transcript): ExpectationResult
     {
         $text = $this->stringPayload($expectation);
@@ -35,7 +37,7 @@ final class SaidEvaluator implements Evaluator
             $label,
             $transcript->count(),
             $transcript->count() === 1 ? 'reply' : 'replies',
-            $last instanceof \Desemax\AgentHarness\Runner\Turn ? sprintf('; last reply: %s', Text::quote(Text::excerpt($last->reply->reply, 0, 0, 80))) : '',
+            $last instanceof Turn ? sprintf('; last reply: %s', Text::quote(Text::excerpt($last->reply->reply, 0, 0, 80))) : '',
         ));
     }
 }

@@ -10,8 +10,9 @@ declare(strict_types=1);
 use Desemax\AgentHarness\Pest\Conversation;
 use Desemax\AgentHarness\Pest\ScenarioAssertions;
 use Desemax\AgentHarness\Scenario\Scenario;
+use Pest\Expectation;
 
-if (class_exists(Pest\Expectation::class)) {
+if (class_exists(Expectation::class)) {
     if (!function_exists('conversation')) {
         /**
          * Starts a conversation test for one scenario file or Scenario object.

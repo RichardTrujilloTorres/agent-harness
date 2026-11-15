@@ -1,6 +1,21 @@
 <?php
 
 declare(strict_types=1);
+use Desemax\AgentHarness\Agent\AgentReply;
+use Desemax\AgentHarness\Agent\ToolCall;
+use Desemax\AgentHarness\Application;
+use Desemax\AgentHarness\Config\HarnessConfig;
+use Desemax\AgentHarness\Llm\LlmConfig;
+use Desemax\AgentHarness\Llm\LlmOptions;
+use Desemax\AgentHarness\Runner\ExpectationResult;
+use Desemax\AgentHarness\Runner\ScenarioResult;
+use Desemax\AgentHarness\Runner\SuiteResult;
+use Desemax\AgentHarness\Runner\Transcript;
+use Desemax\AgentHarness\Runner\Turn;
+use Desemax\AgentHarness\Scenario\Expectation;
+use Desemax\AgentHarness\Scenario\Scenario;
+use Desemax\AgentHarness\Scenario\UserScript;
+use Desemax\AgentHarness\Scenario\ValidationError;
 
 /*
  * Architecture rules. The namespace layout, from the bottom up:
@@ -16,20 +31,20 @@ const ROOT_NS = 'Desemax\AgentHarness';
 
 /** Readonly value objects: every property is set once in the constructor. */
 const VALUE_OBJECTS = [
-    'Desemax\AgentHarness\Agent\AgentReply',
-    'Desemax\AgentHarness\Agent\ToolCall',
-    'Desemax\AgentHarness\Config\HarnessConfig',
-    'Desemax\AgentHarness\Llm\LlmConfig',
-    'Desemax\AgentHarness\Llm\LlmOptions',
-    'Desemax\AgentHarness\Runner\ExpectationResult',
-    'Desemax\AgentHarness\Runner\ScenarioResult',
-    'Desemax\AgentHarness\Runner\SuiteResult',
-    'Desemax\AgentHarness\Runner\Transcript',
-    'Desemax\AgentHarness\Runner\Turn',
-    'Desemax\AgentHarness\Scenario\Expectation',
-    'Desemax\AgentHarness\Scenario\Scenario',
-    'Desemax\AgentHarness\Scenario\UserScript',
-    'Desemax\AgentHarness\Scenario\ValidationError',
+    AgentReply::class,
+    ToolCall::class,
+    HarnessConfig::class,
+    LlmConfig::class,
+    LlmOptions::class,
+    ExpectationResult::class,
+    ScenarioResult::class,
+    SuiteResult::class,
+    Transcript::class,
+    Turn::class,
+    Expectation::class,
+    Scenario::class,
+    UserScript::class,
+    ValidationError::class,
 ];
 
 arch('every class in src declares strict types', function (): void {
@@ -59,7 +74,7 @@ arch('the Scenario namespace depends on nothing else in src', function (): void 
         'Desemax\AgentHarness\Report',
         'Desemax\AgentHarness\Runner',
         'Desemax\AgentHarness\Security',
-        'Desemax\AgentHarness\Application',
+        Application::class,
     ]);
 });
 

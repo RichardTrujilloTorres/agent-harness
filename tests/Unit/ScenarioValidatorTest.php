@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Desemax\AgentHarness\Scenario\ScenarioLoader;
+use Desemax\AgentHarness\Scenario\ScenarioValidator;
 use Desemax\AgentHarness\Scenario\ValidationError;
 
 /**
@@ -75,7 +76,7 @@ it('collects all errors in a file, not just the first', function (): void {
 });
 
 it('rejects a root that is not a map', function (): void {
-    $errors = (new Desemax\AgentHarness\Scenario\ScenarioValidator())->validate(['a', 'b'], 'x.yaml');
+    $errors = (new ScenarioValidator())->validate(['a', 'b'], 'x.yaml');
 
     expect($errors)->toHaveCount(1)
         ->and($errors[0]->path)->toBe('(root)');

@@ -8,6 +8,7 @@ use Desemax\AgentHarness\Runner\ExpectationResult;
 use Desemax\AgentHarness\Runner\Transcript;
 use Desemax\AgentHarness\Scenario\Expectation;
 use LogicException;
+use Override;
 
 /**
  * tool_called: some tool call has that name and, if args are given, matches them (see ArgumentMatcher).
@@ -16,7 +17,7 @@ final readonly class ToolCalledEvaluator implements Evaluator
 {
     public function __construct(private ArgumentMatcher $matcher = new ArgumentMatcher()) {}
 
-    #[\Override]
+    #[Override]
     public function evaluate(Expectation $expectation, Transcript $transcript): ExpectationResult
     {
         $payload = $expectation->payload;

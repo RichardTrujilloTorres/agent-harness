@@ -7,6 +7,7 @@ namespace Desemax\AgentHarness\Assertion;
 use Desemax\AgentHarness\Runner\ExpectationResult;
 use Desemax\AgentHarness\Runner\Transcript;
 use Desemax\AgentHarness\Scenario\Expectation;
+use Override;
 
 /**
  * latency_ms_under: every turn answered in less than n ms.
@@ -15,7 +16,7 @@ final class LatencyEvaluator implements Evaluator
 {
     use PayloadReader;
 
-    #[\Override]
+    #[Override]
     public function evaluate(Expectation $expectation, Transcript $transcript): ExpectationResult
     {
         $limit = $this->intPayload($expectation);

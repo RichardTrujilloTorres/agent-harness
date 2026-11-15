@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Desemax\AgentHarness\Agent\AgentException;
+use Desemax\AgentHarness\Agent\AgentReply;
 use Desemax\AgentHarness\Agent\HttpAgentAdapter;
 use Desemax\AgentHarness\Agent\ToolCall;
 use Desemax\AgentHarness\Config\ConfigLoader;
@@ -75,7 +76,7 @@ it('maps remapped nested fields and sends configured headers', function (): void
 });
 
 it('raises a readable AgentException', function (MockResponse $response, string $message): void {
-    expect(fn(): \Desemax\AgentHarness\Agent\AgentReply => adapterFor($response)->send('s', 'hi'))->toThrow(AgentException::class, $message);
+    expect(fn(): AgentReply => adapterFor($response)->send('s', 'hi'))->toThrow(AgentException::class, $message);
 })->with([
     'non-2xx' => [new MockResponse('{"error": "boom"}', ['http_code' => 500]), 'Agent at http://agent.test/chat answered HTTP 500: {"error": "boom"}'],
     'invalid JSON' => [new MockResponse('<html>oops</html>'), 'answered invalid JSON (Syntax error): <html>oops</html>'],
@@ -94,15 +95,15 @@ it('raises an AgentException on timeout', function (): void {
     })());
     $adapter = adapterFor($response, ['agent' => ['url' => 'http://agent.test/chat', 'timeout_ms' => 50]]);
 
-    expect(fn(): \Desemax\AgentHarness\Agent\AgentReply => $adapter->send('s', 'hi'))->toThrow(AgentException::class, 'Agent at http://agent.test/chat timed out after 50 ms');
+    expect(fn(): AgentReply => $adapter->send('s', 'hi'))->toThrow(AgentException::class, 'Agent at http://agent.test/chat timed out after 50 ms');
 });
 
 it('raises an AgentException when the agent is unreachable', function (): void {
     $response = new MockResponse('', ['error' => 'Could not connect to server']);
 
-    expect(fn(): \Desemax\AgentHarness\Agent\AgentReply => adapterFor($response)->send('s', 'hi'))->toThrow(AgentException::class, 'Agent at http://agent.test/chat is unreachable: Could not connect to server');
+    expect(fn(): AgentReply => adapterFor($response)->send('s', 'hi'))->toThrow(AgentException::class, 'Agent at http://agent.test/chat is unreachable: Could not connect to server');
 });
 
 it('requires a URL', function (): void {
-    expect(fn(): \Desemax\AgentHarness\Agent\HttpAgentAdapter => new HttpAgentAdapter(new HarnessConfig()))->toThrow(InvalidArgumentException::class, 'No agent URL configured');
+    expect(fn(): HttpAgentAdapter => new HttpAgentAdapter(new HarnessConfig()))->toThrow(InvalidArgumentException::class, 'No agent URL configured');
 });

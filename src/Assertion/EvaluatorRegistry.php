@@ -10,6 +10,7 @@ use Desemax\AgentHarness\Runner\Transcript;
 use Desemax\AgentHarness\Scenario\Expectation;
 use Desemax\AgentHarness\Scenario\ExpectationType;
 use LogicException;
+use Override;
 
 /**
  * Dispatches each expectation to the evaluator registered for its type.
@@ -48,7 +49,7 @@ final readonly class EvaluatorRegistry implements Evaluator
         return $this->evaluators[$type->value] ?? throw new LogicException(sprintf('No evaluator registered for %s.', $type->value));
     }
 
-    #[\Override]
+    #[Override]
     public function evaluate(Expectation $expectation, Transcript $transcript): ExpectationResult
     {
         return $this->for($expectation->type)->evaluate($expectation, $transcript);
