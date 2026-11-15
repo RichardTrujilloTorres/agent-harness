@@ -8,6 +8,7 @@ use Closure;
 use Desemax\AgentHarness\Agent\AgentAdapter;
 use Desemax\AgentHarness\Agent\AgentException;
 use Desemax\AgentHarness\Assertion\Evaluator;
+use Desemax\AgentHarness\Assertion\EvaluatorRegistry;
 use Desemax\AgentHarness\Scenario\Scenario;
 use Desemax\AgentHarness\Scenario\UserMode;
 
@@ -25,7 +26,7 @@ final class ScenarioRunner
      * @param ?Closure(): string $sessionIds generates a new session id per scenario
      */
     public function __construct(
-        private readonly Evaluator $evaluator,
+        private readonly Evaluator $evaluator = new EvaluatorRegistry(),
         ?Closure $sessionIds = null,
     ) {
         $this->sessionIds = $sessionIds ?? static fn (): string => 'harness-' . bin2hex(random_bytes(8));
