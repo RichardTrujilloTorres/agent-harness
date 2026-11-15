@@ -25,6 +25,7 @@ First release.
 - `init` creates a commented config and example scenario without overwriting; `list` shows scenario modes and expectation counts.
 - Running `agent-harness` without a command prints the command overview.
 - `init` points the `yaml-language-server` lines of the generated files at the schemas in `vendor/desemax/agent-harness/schema/`.
+- A request timeout is reported as `timed out after <n> ms` whatever the wording of the HTTP client error.
 - Versioned JSON output for `validate` and `run`, `--fail-fast`, and did-you-mean suggestions for unknown fields and expectation types.
 - Draft 2020-12 JSON Schemas for scenarios and config, checked against the PHP validators and all YAML fixtures.
 - Prompt-injection hardening for the judge and LLM-played user, suspicious-reply warnings, secret redaction, safe HTTP/YAML limits, secure report and terminal output, and a hardened demo agent.

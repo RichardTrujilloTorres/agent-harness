@@ -98,6 +98,17 @@ it('raises an AgentException on timeout', function (): void {
     expect(fn(): AgentReply => $adapter->send('s', 'hi'))->toThrow(AgentException::class, 'Agent at http://agent.test/chat timed out after 50 ms');
 });
 
+it('reports a transport timeout as a timeout, whatever the wording', function (string $error): void {
+    $response = new MockResponse('', ['error' => $error]);
+    $adapter = adapterFor($response, ['agent' => ['url' => 'http://agent.test/chat', 'timeout_ms' => 500]]);
+
+    expect(fn(): AgentReply => $adapter->send('s', 'hi'))->toThrow(AgentException::class, 'Agent at http://agent.test/chat timed out after 500 ms');
+})->with([
+    'curl' => ['Operation timed out after 501 milliseconds with 0 bytes received for "http://agent.test/chat".'],
+    'idle timeout' => ['Idle timeout reached for "http://agent.test/chat".'],
+    'max duration' => ['Max duration was reached for "http://agent.test/chat".'],
+]);
+
 it('raises an AgentException when the agent is unreachable', function (): void {
     $response = new MockResponse('', ['error' => 'Could not connect to server']);
 

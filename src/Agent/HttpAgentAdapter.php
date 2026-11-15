@@ -59,7 +59,7 @@ final readonly class HttpAgentAdapter implements AgentAdapter
         } catch (BodyTooLargeException $e) {
             throw new AgentException(sprintf('Agent at %s answered a %s; raise agent.max_response_bytes if this is expected', $this->url, $e->getMessage()), 0, $e);
         } catch (TransportExceptionInterface $e) {
-            if (stripos($e->getMessage(), 'timeout') !== false || stripos($e->getMessage(), 'duration') !== false) {
+            if (preg_match('/timeout|timed out|duration/i', $e->getMessage()) === 1) {
                 throw new AgentException(sprintf('Agent at %s timed out after %d ms', $this->url, $this->config->timeoutMs), 0, $e);
             }
 
