@@ -50,23 +50,7 @@ final class ValidateCommand extends Command
             return Command::FAILURE;
         }
 
-        $invalid = 0;
-        foreach ($files as $file) {
-            $errors = $this->loader->check($file);
-            if ($errors === []) {
-                $output->writeln(sprintf('<info>OK</info>  %s', $file));
-                continue;
-            }
-
-            $invalid++;
-            $output->writeln(sprintf('<error>FAIL</error> %s', $file));
-            foreach ($errors as $error) {
-                $output->writeln(sprintf('  - %s: %s', $error->path, $error->reason));
-            }
-        }
-
-        $output->writeln('');
-        $output->writeln(sprintf('%d file(s), %d valid, %d invalid', count($files), count($files) - $invalid, $invalid));
+        $invalid = (new ValidationPrinter($this->loader))->check($files, $output);
 
         return $invalid === 0 ? Command::SUCCESS : Command::FAILURE;
     }

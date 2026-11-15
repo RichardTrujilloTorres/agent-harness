@@ -1,0 +1,14 @@
+agent:
+  url: http://127.0.0.1:1/unused   # overridden with --url in the tests
+  timeout_ms: 3000
+  headers:
+    X-Test: fixture
+request:
+  session_field: conversation.id
+  message_field: input
+response:
+  reply: data.output.text
+  tool_calls: data.actions
+  tool_name: tool
+  tool_arguments: params
+  handoff: data.escalate

@@ -1,0 +1,16 @@
+name: Order status through remapped fields
+user:
+  mode: scripted
+  turns:
+    - "Where is my order?"
+    - "Let me talk to an agent"
+    - "This turn is never sent"
+expect:
+  - tool_called:
+      name: lookup_order
+      args:
+        order_id: "42"
+        customer: { email: TEST@example.com }
+  - said: on its way
+  - handoff: true
+  - max_turns: 2

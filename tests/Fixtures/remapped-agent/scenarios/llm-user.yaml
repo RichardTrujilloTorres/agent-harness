@@ -1,0 +1,6 @@
+name: LLM-played user is skipped
+user:
+  mode: llm
+goal: Ask about an order
+expect:
+  - judge: The agent is helpful.
