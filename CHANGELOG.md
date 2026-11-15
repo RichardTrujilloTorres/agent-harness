@@ -22,3 +22,11 @@ First release.
 - Pest plugin: `conversation()->against()->run()` with `toPassScenario()`, `toHaveCalledTool()`, `toHaveSaid()`, `toHaveHandedOff()`.
 - Demo restaurant booking agent with six example scenarios (two fail on purpose) and two LLM example scenarios.
 - Exit codes: 0 pass, 1 failures, 2 bad input, 3 errors.
+- `init` creates a commented config and example scenario without overwriting; `list` shows scenario modes and expectation counts.
+- Versioned JSON output for `validate` and `run`, `--fail-fast`, and did-you-mean suggestions for unknown fields and expectation types.
+- Draft 2020-12 JSON Schemas for scenarios and config, checked against the PHP validators and all YAML fixtures.
+- Prompt-injection hardening for the judge and LLM-played user, suspicious-reply warnings, secret redaction, safe HTTP/YAML limits, secure report and terminal output, and a hardened demo agent.
+- Threat model and private security-reporting policy.
+- Pint, strict PHPStan, Rector, dependency, architecture, Psalm taint, line/type coverage and covered-mutation gates, all available through `composer check`.
+- CI, security, SonarCloud, Scorecard and tag-release workflows with pinned third-party actions.
+- PHAR build and smoke checks; release workflow attaches the PHAR, SHA-256 checksum and build provenance.

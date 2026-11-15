@@ -15,7 +15,10 @@ Status: v0.1. Text conversations over HTTP only. See the [roadmap](#roadmap) for
 
 - [Install](#install)
 - [Quickstart (2 minutes)](#quickstart-2-minutes)
+- [Start a project](#start-a-project)
 - [Scenarios](#scenarios)
+- [List and JSON output](#list-and-json-output)
+- [JSON Schemas](#json-schemas)
 - [harness.yaml](#harnessyaml)
 - [LLM-played user and LLM judge](#llm-played-user-and-llm-judge)
 - [The run command](#the-run-command)
@@ -23,18 +26,21 @@ Status: v0.1. Text conversations over HTTP only. See the [roadmap](#roadmap) for
 - [Pest plugin](#pest-plugin)
 - [CI](#ci)
 - [Demo agent](#demo-agent)
-- [Development](#development)
+- [Security model](#security-model)
+- [Development and quality gates](#development-and-quality-gates)
 - [Roadmap](#roadmap)
 
 ## Install
 
 PHP 8.3 or later.
 
+After the first release, install it in a project with:
+
 ```bash
 composer require --dev desemax/agent-harness
 ```
 
-Or clone this repository and run `composer install`; the commands below then use `bin/agent-harness` instead of `vendor/bin/agent-harness`.
+Until then, clone this repository and run `composer install`. The commands below use `bin/agent-harness` from a clone; use `vendor/bin/agent-harness` when installed in another project.
 
 ## Quickstart (2 minutes)
 
@@ -78,6 +84,23 @@ FAIL   Allergen question is not answered with invented claims  (1 turn, 3 ms)
 ```
 
 Add `--report-html=report.html` and open the file for a readable report of the same run.
+
+## Start a project
+
+Run `init` in the project directory to create a commented `harness.yaml` and `scenarios/example.yaml`:
+
+```bash
+vendor/bin/agent-harness init
+```
+
+Existing files are never overwritten. Edit the agent URL and the example, then follow the printed next steps:
+
+```bash
+vendor/bin/agent-harness validate scenarios
+vendor/bin/agent-harness run scenarios
+```
+
+From a clone, use `bin/agent-harness` instead. To try the example without your own agent, start the bundled demo with `composer demo`.
 
 ## Scenarios
 
@@ -159,7 +182,36 @@ FAIL path/to/broken.yaml
   - expect[2].tool_called.name: required field is missing
 ```
 
-Exit code 0 when all files are valid, 1 when any is invalid, 2 when the path does not exist. `run` validates first and stops with exit 2 if anything is invalid.
+Exit code 0 when all files are valid, 1 when any is invalid, 2 when the path does not exist. `run` validates first and stops with exit 2 if anything is invalid. Errors name the file and field path and say how to fix the value; close misspellings include a `did you mean` suggestion.
+
+## List and JSON output
+
+List scenarios without running them, including their user mode and expectation count:
+
+```bash
+bin/agent-harness list examples/scenarios
+```
+
+Both `validate` and `run` accept `--format=json`. They write exactly one UTF-8 JSON document to stdout, without ANSI escapes, and keep the normal exit code even when scenarios fail. Every document has this stable envelope (`schema_version` is currently 1):
+
+```json
+{"schema_version": 1, "command": "validate", "ok": true, "exit_code": 0}
+```
+
+- `validate` adds `files`, each with `file`, `valid` and `errors` (`path` and `message`), plus `summary` with `files`, `valid` and `invalid`. Input errors instead contain `error`.
+- `run` adds `summary` (`scenarios`, `run`, status counts and `duration_ms`), `scenarios` (name, file, status, message, attempts, duration, turns, expectations and warnings) and `reports` (paths of requested reports). Invalid scenarios add `validation`; invalid config adds `config_errors`; other input errors contain `error`.
+
+The JSON shape is versioned as a whole: `schema_version` changes only for a breaking change. `run --fail-fast` stops after the first failed or errored scenario; the summary records how many scenarios ran.
+
+## JSON Schemas
+
+`schema/scenario.schema.json` and `schema/harness.schema.json` use JSON Schema draft 2020-12. The example YAML files start with a `yaml-language-server` directive, so compatible editors provide completion and validation. Add the equivalent line to your own files:
+
+```yaml
+# yaml-language-server: $schema=vendor/desemax/agent-harness/schema/scenario.schema.json
+```
+
+The schema test suite checks every YAML fixture and example against both the JSON Schema and the PHP validator, so the two definitions cannot silently drift apart.
 
 ## harness.yaml
 
@@ -237,6 +289,8 @@ bin/agent-harness run <file-or-directory> [options]
 | `--filter=<text>` | Only scenarios whose name contains the text (case-insensitive) |
 | `--seed=<int>` | Seed passed to the LLM |
 | `--retries=<n>` | Re-run a failed or errored scenario up to n times (default 0). Passing on a retry is reported FLAKY and counts as a pass for the exit code |
+| `--fail-fast` | Stop after the first scenario that fails or errors |
+| `--format=json` | Write one JSON document instead of text (see [List and JSON output](#list-and-json-output)) |
 | `--report-html=<file>` | Write the HTML report |
 | `--report-junit=<file>` | Write the JUnit XML report |
 | `--transcripts=<dir>` | Write one JSON transcript per scenario |
@@ -360,15 +414,29 @@ curl -s -X POST http://127.0.0.1:8787/chat \
   -d '{"session_id": "s1", "message": "I would like a table for 2 on Friday at 19:30"}'
 ```
 
-## Development
+## Security model
+
+Scenario files and local config are trusted author input. The agent under test and all LLM output are untrusted. The harness wraps judge transcripts in random-nonce delimiters, keeps rubrics outside untrusted data, detects suspicious replies, and prevents agent text from changing the LLM user's persona or ending its conversation. An LLM judge can still be fooled, so safety-critical expectations should be deterministic.
+
+Configured header values and API keys are redacted from terminal, JSON, HTML, JUnit and transcript output. HTTP uses TLS verification, bounded response bodies and explicit redirect policy. YAML object/custom tags, excessive size and excessive nesting are rejected. Reports escape their contexts, use no remote resources, refuse symlink writes, and sanitize filenames and terminal control sequences.
+
+See the [threat model](docs/security/threat-model.md) for each threat, mitigation and regression test, and [SECURITY.md](SECURITY.md) for private vulnerability reporting.
+
+## Development and quality gates
 
 ```bash
-composer test     # Pest
-composer stan     # PHPStan, level max
-composer demo     # start the demo agent
+composer install
+composer check       # every local gate
+composer demo        # start the demo agent
+composer phar        # build build/agent-harness.phar
+composer phar:check  # validate examples and run the demo with the PHAR
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+`composer check` runs Pint, PHPStan at level max with strict rules, Rector, Psalm taint analysis, dependency and security checks, Pest, architecture and schema tests, all three coverage gates, the demo, and the PHAR smoke test. CI additionally tests PHP 8.3 and 8.4 with lowest and stable dependencies and includes security, SonarCloud, Scorecard and tag-release workflows.
+
+Measured in this hardening run: **336 tests and 1,168 assertions**, **95.3% line coverage**, **100.0% type coverage**, and **94.33% covered-only mutation score**. Pint, PHPStan, Rector and Psalm taint analysis all pass with no errors. These are measured results, not badges.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for individual commands and commit rules.
 
 ## Roadmap
 
