@@ -200,7 +200,7 @@ describe('judge', function (): void {
     {
         $llm = new FakeLlmClient($responses);
         $transcript = playReplies([new AgentReply('Hello! Booked.', [new ToolCall('create_booking', ['party_size' => 2])]), new AgentReply('A colleague will call you.', handoff: true)]);
-        $result = (new JudgeEvaluator($llm, 3))->evaluate(new Expectation(ExpectationType::Judge, $rubric), $transcript);
+        $result = (new JudgeEvaluator($llm, 3, static fn(): string => 'n0nce'))->evaluate(new Expectation(ExpectationType::Judge, $rubric), $transcript);
 
         return [$result->status, $result->reason, $llm];
     }
@@ -211,15 +211,14 @@ describe('judge', function (): void {
         expect($status)->toBe(ExpectationStatus::Passed)
             ->and($reason)->toBe('judge "The agent is polite.": pass: Greets and thanks the user.')
             ->and($llm->requests)->toHaveCount(1)
-            ->and($llm->requests[0]['system'])->toBe(JudgeEvaluator::SYSTEM_PROMPT)
+            ->and($llm->requests[0]['system'])->toBe(JudgeEvaluator::systemPrompt('The agent is polite.', 'n0nce'))
             ->and($llm->requests[0]['options']->jsonMode)->toBeTrue()
             ->and($llm->requests[0]['options']->temperature)->toBe(0.0)
             ->and($llm->requests[0]['options']->seed)->toBe(3)
+            ->and($llm->requests[0]['messages'])->toHaveCount(1)
+            ->and($llm->requests[0]['messages'][0]['role'])->toBe('user')
             ->and($llm->requests[0]['messages'][0]['content'])->toBe(implode("\n", [
-                'Rubric:',
-                'The agent is polite.',
-                '',
-                'Transcript:',
+                '<<<TRANSCRIPT n0nce>>>',
                 'Turn 1',
                 'User: user message 1',
                 'Agent: Hello! Booked.',
@@ -228,11 +227,12 @@ describe('judge', function (): void {
                 'User: user message 2',
                 'Agent: A colleague will call you.',
                 'Agent handed the conversation off to a human.',
+                '<<<END TRANSCRIPT n0nce>>>',
             ]));
     });
 
     it('fails with the judge\'s reason', function (): void {
-        [$status, $reason] = judge(['```json' . "\n" . '{"pass": false, "reason": "Never says thank you."}' . "\n" . '```']);
+        [$status, $reason] = judge(['{"pass": false, "reason": "Never says thank you."}']);
 
         expect($status)->toBe(ExpectationStatus::Failed)
             ->and($reason)->toBe('judge "The agent is polite.": fail: Never says thank you.');

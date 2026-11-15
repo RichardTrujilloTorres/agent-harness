@@ -14,6 +14,7 @@ use Desemax\AgentHarness\Llm\LlmConfig;
 use Desemax\AgentHarness\Llm\LlmException;
 use Desemax\AgentHarness\Scenario\Scenario;
 use Desemax\AgentHarness\Scenario\UserMode;
+use Desemax\AgentHarness\Security\InjectionDetector;
 
 /**
  * Plays one scenario against an agent and evaluates its expectations.
@@ -32,6 +33,7 @@ final readonly class ScenarioRunner
         ?Closure $sessionIds = null,
         private ?LlmClient $llm = null,
         private ?int $seed = null,
+        private InjectionDetector $detector = new InjectionDetector(),
     ) {
         $this->sessionIds = $sessionIds ?? static fn(): string => 'harness-' . bin2hex(random_bytes(8));
     }
@@ -43,7 +45,7 @@ final readonly class ScenarioRunner
 
         $user = null;
         if ($scenario->user->mode === UserMode::Llm) {
-            if (!$this->llm instanceof \Desemax\AgentHarness\Llm\LlmClient) {
+            if (!$this->llm instanceof LlmClient) {
                 return new ScenarioResult($scenario, ScenarioStatus::Skipped, $transcript, [], 0, LlmConfig::NOT_CONFIGURED);
             }
             $user = new LlmUser($this->llm, $this->seed);
@@ -53,7 +55,7 @@ final readonly class ScenarioRunner
         $scripted = $scenario->user->turns;
         try {
             while ($transcript->count() < $scenario->maxTurns) {
-                $message = $user instanceof \Desemax\AgentHarness\Runner\LlmUser ? ($user->next($scenario, $transcript)) : $scripted[$transcript->count()] ?? null;
+                $message = $user instanceof LlmUser ? ($user->next($scenario, $transcript)) : $scripted[$transcript->count()] ?? null;
                 if ($message === null) {
                     break;
                 }
@@ -63,9 +65,9 @@ final readonly class ScenarioRunner
                 }
             }
         } catch (AgentException $e) {
-            return new ScenarioResult($scenario, ScenarioStatus::Error, $transcript, [], $this->elapsedMs($start), $e->getMessage());
+            return new ScenarioResult($scenario, ScenarioStatus::Error, $transcript, [], $this->elapsedMs($start), $e->getMessage(), warnings: $this->detector->warnings($transcript));
         } catch (LlmException $e) {
-            return new ScenarioResult($scenario, ScenarioStatus::Error, $transcript, [], $this->elapsedMs($start), 'LLM-played user: ' . $e->getMessage());
+            return new ScenarioResult($scenario, ScenarioStatus::Error, $transcript, [], $this->elapsedMs($start), 'LLM-played user: ' . $e->getMessage(), warnings: $this->detector->warnings($transcript));
         }
 
         $results = [];
@@ -73,7 +75,7 @@ final readonly class ScenarioRunner
             $results[] = $this->evaluator->evaluate($expectation, $transcript);
         }
 
-        return new ScenarioResult($scenario, $this->status($results), $transcript, $results, $this->elapsedMs($start));
+        return new ScenarioResult($scenario, $this->status($results), $transcript, $results, $this->elapsedMs($start), warnings: $this->detector->warnings($transcript));
     }
 
     /**
