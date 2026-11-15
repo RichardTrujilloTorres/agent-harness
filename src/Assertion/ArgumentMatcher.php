@@ -29,7 +29,7 @@ final class ArgumentMatcher
                 if (!array_key_exists($key, $actual)) {
                     return sprintf('no %s, expected %s', $child, Text::value($value));
                 }
-                $mismatch = $this->mismatch($value, $actual[$key], $child);
+                $mismatch = $this->mismatch($value, $actual[$key] ?? null, $child);
                 if ($mismatch !== null) {
                     return $mismatch;
                 }

@@ -15,6 +15,7 @@ final class LatencyEvaluator implements Evaluator
 {
     use PayloadReader;
 
+    #[\Override]
     public function evaluate(Expectation $expectation, Transcript $transcript): ExpectationResult
     {
         $limit = $this->intPayload($expectation);

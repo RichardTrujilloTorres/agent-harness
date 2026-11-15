@@ -18,20 +18,20 @@ use Desemax\AgentHarness\Scenario\UserMode;
 /**
  * Plays one scenario against an agent and evaluates its expectations.
  */
-final class ScenarioRunner
+final readonly class ScenarioRunner
 {
     /** @var Closure(): string */
-    private readonly Closure $sessionIds;
+    private Closure $sessionIds;
 
     /**
      * @param ?Closure(): string $sessionIds generates a new session id per scenario
      * @param ?LlmClient $llm plays llm-mode users; without it those scenarios are skipped
      */
     public function __construct(
-        private readonly Evaluator $evaluator = new EvaluatorRegistry(),
+        private Evaluator $evaluator = new EvaluatorRegistry(),
         ?Closure $sessionIds = null,
-        private readonly ?LlmClient $llm = null,
-        private readonly ?int $seed = null,
+        private ?LlmClient $llm = null,
+        private ?int $seed = null,
     ) {
         $this->sessionIds = $sessionIds ?? static fn(): string => 'harness-' . bin2hex(random_bytes(8));
     }
@@ -43,7 +43,7 @@ final class ScenarioRunner
 
         $user = null;
         if ($scenario->user->mode === UserMode::Llm) {
-            if ($this->llm === null) {
+            if (!$this->llm instanceof \Desemax\AgentHarness\Llm\LlmClient) {
                 return new ScenarioResult($scenario, ScenarioStatus::Skipped, $transcript, [], 0, LlmConfig::NOT_CONFIGURED);
             }
             $user = new LlmUser($this->llm, $this->seed);
@@ -53,7 +53,7 @@ final class ScenarioRunner
         $scripted = $scenario->user->turns;
         try {
             while ($transcript->count() < $scenario->maxTurns) {
-                $message = $user === null ? ($scripted[$transcript->count()] ?? null) : $user->next($scenario, $transcript);
+                $message = $user instanceof \Desemax\AgentHarness\Runner\LlmUser ? ($user->next($scenario, $transcript)) : $scripted[$transcript->count()] ?? null;
                 if ($message === null) {
                     break;
                 }
@@ -63,9 +63,9 @@ final class ScenarioRunner
                 }
             }
         } catch (AgentException $e) {
-            return new ScenarioResult($scenario, ScenarioStatus::Error, $transcript, [], self::elapsedMs($start), $e->getMessage());
+            return new ScenarioResult($scenario, ScenarioStatus::Error, $transcript, [], $this->elapsedMs($start), $e->getMessage());
         } catch (LlmException $e) {
-            return new ScenarioResult($scenario, ScenarioStatus::Error, $transcript, [], self::elapsedMs($start), 'LLM-played user: ' . $e->getMessage());
+            return new ScenarioResult($scenario, ScenarioStatus::Error, $transcript, [], $this->elapsedMs($start), 'LLM-played user: ' . $e->getMessage());
         }
 
         $results = [];
@@ -73,7 +73,7 @@ final class ScenarioRunner
             $results[] = $this->evaluator->evaluate($expectation, $transcript);
         }
 
-        return new ScenarioResult($scenario, self::status($results), $transcript, $results, self::elapsedMs($start));
+        return new ScenarioResult($scenario, $this->status($results), $transcript, $results, $this->elapsedMs($start));
     }
 
     /**
@@ -81,7 +81,7 @@ final class ScenarioRunner
      *
      * @param list<ExpectationResult> $results
      */
-    private static function status(array $results): ScenarioStatus
+    private function status(array $results): ScenarioStatus
     {
         $statuses = array_map(static fn(ExpectationResult $r): ExpectationStatus => $r->status, $results);
         if (in_array(ExpectationStatus::Failed, $statuses, true)) {
@@ -97,7 +97,7 @@ final class ScenarioRunner
         return ScenarioStatus::Passed;
     }
 
-    private static function elapsedMs(int|float $start): int
+    private function elapsedMs(int|float $start): int
     {
         return (int) round((hrtime(true) - $start) / 1_000_000);
     }

@@ -12,10 +12,11 @@ use LogicException;
 /**
  * tool_called: some tool call has that name and, if args are given, matches them (see ArgumentMatcher).
  */
-final class ToolCalledEvaluator implements Evaluator
+final readonly class ToolCalledEvaluator implements Evaluator
 {
-    public function __construct(private readonly ArgumentMatcher $matcher = new ArgumentMatcher()) {}
+    public function __construct(private ArgumentMatcher $matcher = new ArgumentMatcher()) {}
 
+    #[\Override]
     public function evaluate(Expectation $expectation, Transcript $transcript): ExpectationResult
     {
         $payload = $expectation->payload;

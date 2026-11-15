@@ -15,7 +15,7 @@ use Desemax\AgentHarness\Runner\SuiteResult;
  */
 final class HtmlReport
 {
-    private const CSS = <<<'CSS'
+    private const string CSS = <<<'CSS'
         :root { --bg: #ffffff; --fg: #1f2328; --muted: #656d76; --border: #d0d7de; --panel: #f6f8fa;
           --pass: #1a7f37; --fail: #cf222e; --skip: #9a6700; --error: #a40e26; --flaky: #8250df; }
         @media (prefers-color-scheme: dark) {
@@ -51,7 +51,7 @@ final class HtmlReport
         .meta { font-size: 13px; color: var(--muted); }
         CSS;
 
-    private const MARKS = ['passed' => '✓', 'failed' => '✗', 'skipped' => '~', 'error' => '!'];
+    private const array MARKS = ['passed' => '✓', 'failed' => '✗', 'skipped' => '~', 'error' => '!'];
 
     public function render(SuiteResult $suite, ?DateTimeImmutable $generatedAt = null): string
     {
@@ -61,7 +61,7 @@ final class HtmlReport
         $summary = [];
         $summary[] = sprintf('<span><b>%d</b> scenario(s)</span>', count($suite->results));
         foreach (ScenarioStatus::cases() as $status) {
-            $summary[] = sprintf('<span class="c-%s"><b>%d</b> %s</span>', $status->value, $counts[$status->value], self::e(strtolower($status->label())));
+            $summary[] = sprintf('<span class="c-%s"><b>%d</b> %s</span>', $status->value, $counts[$status->value], $this->e(strtolower($status->label())));
         }
         $summary[] = sprintf('<span class="muted">%d ms</span>', $suite->durationMs);
 
@@ -78,7 +78,7 @@ final class HtmlReport
             . '</head>' . "\n"
             . '<body>' . "\n"
             . '<h1>agent-harness report</h1>' . "\n"
-            . sprintf('<div class="muted">Generated %s</div>', self::e($generatedAt->format('Y-m-d H:i:s T'))) . "\n"
+            . sprintf('<div class="muted">Generated %s</div>', $this->e($generatedAt->format('Y-m-d H:i:s T'))) . "\n"
             . '<div class="summary">' . implode(' ', $summary) . '</div>' . "\n"
             . implode("\n", $sections) . "\n"
             . '</body>' . "\n"
@@ -89,12 +89,12 @@ final class HtmlReport
     {
         $data = ResultData::scenario($result);
         $html = [];
-        $html[] = '<section id="' . self::e($id) . '">';
+        $html[] = '<section id="' . $this->e($id) . '">';
         $html[] = sprintf(
             '<h2><span class="badge %s">%s</span> <span>%s</span></h2>',
-            self::e($data['status']),
-            self::e($result->status->label()),
-            self::e($data['name']),
+            $this->e($data['status']),
+            $this->e($result->status->label()),
+            $this->e($data['name']),
         );
 
         $meta = [sprintf('%d %s', count($data['turns']), count($data['turns']) === 1 ? 'turn' : 'turns'), sprintf('%d ms', $data['duration_ms'])];
@@ -104,10 +104,10 @@ final class HtmlReport
         if ($data['file'] !== null) {
             $meta[] = $data['file'];
         }
-        $html[] = '<div class="meta">' . self::e(implode(' · ', $meta)) . '</div>';
+        $html[] = '<div class="meta">' . $this->e(implode(' · ', $meta)) . '</div>';
 
         if ($data['message'] !== null) {
-            $html[] = '<p class="message">' . self::e($data['message']) . '</p>';
+            $html[] = '<p class="message">' . $this->e($data['message']) . '</p>';
         }
 
         if ($data['expectations'] !== []) {
@@ -120,10 +120,10 @@ final class HtmlReport
                     : $expectation->reason;
                 $html[] = sprintf(
                     '<li class="c-%s"><span class="mark" title="%s">%s</span><span class="text">%s</span></li>',
-                    self::e($status),
-                    self::e($status),
+                    $this->e($status),
+                    $this->e($status),
                     self::MARKS[$status],
-                    self::e($text),
+                    $this->e($text),
                 );
             }
             $html[] = '</ul>';
@@ -136,11 +136,11 @@ final class HtmlReport
         foreach ($data['turns'] as $turn) {
             $html[] = '<div class="turn">';
             $html[] = sprintf('<div class="meta">Turn %d · %d ms%s</div>', $turn['number'], $turn['latency_ms'], $turn['handoff'] ? ' · <strong>handoff</strong>' : '');
-            $html[] = '<div><span class="who">User</span> <span class="text">' . self::e($turn['user']) . '</span></div>';
-            $html[] = '<div><span class="who">Agent</span> <span class="text">' . self::e($turn['agent']) . '</span></div>';
+            $html[] = '<div><span class="who">User</span> <span class="text">' . $this->e($turn['user']) . '</span></div>';
+            $html[] = '<div><span class="who">Agent</span> <span class="text">' . $this->e($turn['agent']) . '</span></div>';
             foreach ($turn['tool_calls'] as $call) {
-                $html[] = '<div><span class="who">Tool</span> <code>' . self::e($call['name']) . '</code>'
-                    . '<pre>' . self::e(ResultData::json((object) $call['arguments'])) . '</pre></div>';
+                $html[] = '<div><span class="who">Tool</span> <code>' . $this->e($call['name']) . '</code>'
+                    . '<pre>' . $this->e(ResultData::json((object) $call['arguments'])) . '</pre></div>';
             }
             $html[] = '</div>';
         }
@@ -150,7 +150,7 @@ final class HtmlReport
         return implode("\n", $html);
     }
 
-    private static function e(string $text): string
+    private function e(string $text): string
     {
         return htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
     }

@@ -15,18 +15,20 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'validate', description: 'Validate scenario files (a file or a directory, recursive)')]
 final class ValidateCommand extends Command
 {
-    public const EXIT_PATH_NOT_FOUND = 2;
+    public const int EXIT_PATH_NOT_FOUND = 2;
 
     public function __construct(private readonly ScenarioLoader $loader = new ScenarioLoader())
     {
         parent::__construct();
     }
 
+    #[\Override]
     protected function configure(): void
     {
         $this->addArgument('path', InputArgument::REQUIRED, 'Scenario file or directory');
     }
 
+    #[\Override]
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $path = $input->getArgument('path');

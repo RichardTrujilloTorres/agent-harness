@@ -8,7 +8,7 @@ use Desemax\AgentHarness\Llm\LlmConfig;
 
 final readonly class HarnessConfig
 {
-    public const DEFAULT_TIMEOUT_MS = 10000;
+    public const int DEFAULT_TIMEOUT_MS = 10000;
 
     /**
      * @param array<string, string> $headers

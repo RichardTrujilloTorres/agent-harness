@@ -10,9 +10,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * Checks scenario files and prints the validate report (shared by validate and run).
  */
-final class ValidationPrinter
+final readonly class ValidationPrinter
 {
-    public function __construct(private readonly ScenarioLoader $loader) {}
+    public function __construct(private ScenarioLoader $loader) {}
 
     /**
      * Checks every file; prints the report when $always is true or any file is invalid.

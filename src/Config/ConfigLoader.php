@@ -15,9 +15,9 @@ use Symfony\Component\Yaml\Yaml;
  */
 final class ConfigLoader
 {
-    public const DEFAULT_FILE = 'harness.yaml';
+    public const string DEFAULT_FILE = 'harness.yaml';
 
-    private const SECTIONS = [
+    private const array SECTIONS = [
         'agent' => ['url', 'timeout_ms', 'headers'],
         'request' => ['session_field', 'message_field'],
         'response' => ['reply', 'tool_calls', 'tool_name', 'tool_arguments', 'handoff'],
@@ -53,8 +53,7 @@ final class ConfigLoader
      */
     public function fromArray(mixed $data, string $file = '(config)'): HarnessConfig
     {
-        $this->errors = [];
-        $this->file = $file;
+        $this->reset($file);
 
         if (!$this->isMap($data)) {
             $this->error('(root)', 'config must be a map');
@@ -75,7 +74,7 @@ final class ConfigLoader
 
         $agent = $sections['agent'];
         $url = $this->optionalString($agent, 'url', 'agent.url');
-        if ($url !== null && !preg_match('#^https?://#i', $url)) {
+        if ($url !== null && preg_match('#^https?://#i', $url) !== 1) {
             $this->error('agent.url', 'must start with http:// or https://');
         }
 
@@ -258,6 +257,12 @@ final class ConfigLoader
     private function isMap(mixed $value): bool
     {
         return is_array($value) && ($value === [] || !array_is_list($value));
+    }
+
+    private function reset(string $file): void
+    {
+        $this->errors = [];
+        $this->file = $file;
     }
 
     private function error(string $path, string $reason): void

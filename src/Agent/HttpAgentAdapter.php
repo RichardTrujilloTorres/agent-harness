@@ -14,17 +14,17 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 /**
  * Talks to an agent over HTTP: POST JSON, read the reply with the configured dot-paths.
  */
-final class HttpAgentAdapter implements AgentAdapter
+final readonly class HttpAgentAdapter implements AgentAdapter
 {
-    private readonly string $url;
+    private string $url;
 
-    private readonly HttpClientInterface $client;
+    private HttpClientInterface $client;
 
     /**
      * @throws InvalidArgumentException when the config has no agent URL
      */
     public function __construct(
-        private readonly HarnessConfig $config,
+        private HarnessConfig $config,
         ?HttpClientInterface $client = null,
     ) {
         if ($config->url === null) {
@@ -34,6 +34,7 @@ final class HttpAgentAdapter implements AgentAdapter
         $this->client = $client ?? HttpClient::create();
     }
 
+    #[\Override]
     public function send(string $sessionId, string $message): AgentReply
     {
         $payload = DotPath::set([], $this->config->sessionField, $sessionId);
@@ -60,16 +61,16 @@ final class HttpAgentAdapter implements AgentAdapter
         $latencyMs = (int) round((hrtime(true) - $start) / 1_000_000);
 
         if ($status < 200 || $status >= 300) {
-            throw new AgentException(sprintf('Agent at %s answered HTTP %d: %s', $this->url, $status, self::excerpt($body)));
+            throw new AgentException(sprintf('Agent at %s answered HTTP %d: %s', $this->url, $status, $this->excerpt($body)));
         }
 
         try {
             $decoded = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
-            throw new AgentException(sprintf('Agent at %s answered invalid JSON (%s): %s', $this->url, $e->getMessage(), self::excerpt($body)), 0, $e);
+            throw new AgentException(sprintf('Agent at %s answered invalid JSON (%s): %s', $this->url, $e->getMessage(), $this->excerpt($body)), 0, $e);
         }
         if (!is_array($decoded)) {
-            throw new AgentException(sprintf('Agent at %s answered JSON that is not an object: %s', $this->url, self::excerpt($body)));
+            throw new AgentException(sprintf('Agent at %s answered JSON that is not an object: %s', $this->url, $this->excerpt($body)));
         }
 
         return new AgentReply(
@@ -88,7 +89,7 @@ final class HttpAgentAdapter implements AgentAdapter
     {
         [$found, $value] = DotPath::get($body, $this->config->replyPath);
         if (!$found) {
-            throw new AgentException(sprintf('Agent response has no "%s" field (response.reply): %s', $this->config->replyPath, self::excerpt(self::encode($body))));
+            throw new AgentException(sprintf('Agent response has no "%s" field (response.reply): %s', $this->config->replyPath, $this->excerpt($this->encode($body))));
         }
         if (!is_string($value) && !is_int($value) && !is_float($value) && $value !== null) {
             throw new AgentException(sprintf('Agent response field "%s" must be a string, got %s', $this->config->replyPath, get_debug_type($value)));
@@ -169,12 +170,12 @@ final class HttpAgentAdapter implements AgentAdapter
         return $value;
     }
 
-    private static function encode(mixed $value): string
+    private function encode(mixed $value): string
     {
         return (string) json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
-    private static function excerpt(string $text, int $max = 200): string
+    private function excerpt(string $text, int $max = 200): string
     {
         $text = trim((string) preg_replace('/\s+/', ' ', $text));
         if ($text === '') {

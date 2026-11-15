@@ -10,10 +10,10 @@ namespace Desemax\AgentHarness\Llm;
 final readonly class LlmConfig
 {
     /** Skip reason for LLM-played users and judge expectations when harness.yaml has no llm section. */
-    public const NOT_CONFIGURED = 'no llm configured in harness.yaml';
+    public const string NOT_CONFIGURED = 'no llm configured in harness.yaml';
 
-    public const DEFAULT_API_KEY_ENV = 'HARNESS_LLM_API_KEY';
-    public const DEFAULT_TIMEOUT_MS = 30000;
+    public const string DEFAULT_API_KEY_ENV = 'HARNESS_LLM_API_KEY';
+    public const int DEFAULT_TIMEOUT_MS = 30000;
 
     public function __construct(
         public string $baseUrl,

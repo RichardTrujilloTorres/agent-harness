@@ -14,10 +14,10 @@ use LogicException;
 /**
  * Dispatches each expectation to the evaluator registered for its type.
  */
-final class EvaluatorRegistry implements Evaluator
+final readonly class EvaluatorRegistry implements Evaluator
 {
     /** @var array<string, Evaluator> keyed by ExpectationType value */
-    private readonly array $evaluators;
+    private array $evaluators;
 
     /**
      * @param array<string, Evaluator> $overrides evaluators keyed by ExpectationType value, replacing the defaults
@@ -48,6 +48,7 @@ final class EvaluatorRegistry implements Evaluator
         return $this->evaluators[$type->value] ?? throw new LogicException(sprintf('No evaluator registered for %s.', $type->value));
     }
 
+    #[\Override]
     public function evaluate(Expectation $expectation, Transcript $transcript): ExpectationResult
     {
         return $this->for($expectation->type)->evaluate($expectation, $transcript);

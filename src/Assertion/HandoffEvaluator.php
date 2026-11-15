@@ -15,6 +15,7 @@ final class HandoffEvaluator implements Evaluator
 {
     use PayloadReader;
 
+    #[\Override]
     public function evaluate(Expectation $expectation, Transcript $transcript): ExpectationResult
     {
         $expected = $this->boolPayload($expectation);

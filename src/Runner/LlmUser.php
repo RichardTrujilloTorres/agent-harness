@@ -12,26 +12,26 @@ use Desemax\AgentHarness\Scenario\Scenario;
 /**
  * Plays the user of a scenario with an LLM, from its persona and goal.
  */
-final class LlmUser
+final readonly class LlmUser
 {
-    public const DONE = '[[DONE]]';
+    public const string DONE = '[[DONE]]';
 
     /** Some variety in how the user phrases things; --seed makes it repeatable where the server supports it. */
-    public const TEMPERATURE = 0.7;
+    public const float TEMPERATURE = 0.7;
 
-    private const START = '(The agent is waiting. Write your first message to it.)';
-    private const DEFAULT_PERSONA = 'An ordinary user of this service.';
-    private const DEFAULT_GOAL = 'Get help with a typical request.';
+    private const string START = '(The agent is waiting. Write your first message to it.)';
+    private const string DEFAULT_PERSONA = 'An ordinary user of this service.';
+    private const string DEFAULT_GOAL = 'Get help with a typical request.';
 
     public function __construct(
-        private readonly LlmClient $client,
-        private readonly ?int $seed = null,
+        private LlmClient $client,
+        private ?int $seed = null,
     ) {}
 
     public function systemPrompt(Scenario $scenario): string
     {
-        $persona = self::text($scenario->persona) ?? self::DEFAULT_PERSONA;
-        $goal = self::text($scenario->goal) ?? self::DEFAULT_GOAL;
+        $persona = $this->text($scenario->persona) ?? self::DEFAULT_PERSONA;
+        $goal = $this->text($scenario->goal) ?? self::DEFAULT_GOAL;
         $done = self::DONE;
 
         return <<<PROMPT
@@ -82,7 +82,7 @@ final class LlmUser
         return $text;
     }
 
-    private static function text(?string $value): ?string
+    private function text(?string $value): ?string
     {
         return $value === null || trim($value) === '' ? null : trim($value);
     }

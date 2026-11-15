@@ -9,9 +9,9 @@ namespace Desemax\AgentHarness\Scenario;
  */
 final class ScenarioValidator
 {
-    private const TOP_LEVEL_KEYS = ['name', 'persona', 'goal', 'user', 'max_turns', 'expect'];
-    private const USER_KEYS = ['mode', 'turns', 'opening'];
-    private const TOOL_CALLED_KEYS = ['name', 'args'];
+    private const array TOP_LEVEL_KEYS = ['name', 'persona', 'goal', 'user', 'max_turns', 'expect'];
+    private const array USER_KEYS = ['mode', 'turns', 'opening'];
+    private const array TOOL_CALLED_KEYS = ['name', 'args'];
 
     /** @var list<ValidationError> */
     private array $errors = [];
@@ -44,7 +44,7 @@ final class ScenarioValidator
         $this->validateUser($data);
 
         if (array_key_exists('max_turns', $data)) {
-            $this->positiveInt($data['max_turns'], 'max_turns');
+            $this->positiveInt($data['max_turns'] ?? null, 'max_turns');
         }
 
         $this->validateExpect($data);

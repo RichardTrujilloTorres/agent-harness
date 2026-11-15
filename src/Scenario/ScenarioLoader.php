@@ -12,10 +12,10 @@ use SplFileInfo;
 use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Yaml;
 
-final class ScenarioLoader
+final readonly class ScenarioLoader
 {
     public function __construct(
-        private readonly ScenarioValidator $validator = new ScenarioValidator(),
+        private ScenarioValidator $validator = new ScenarioValidator(),
     ) {}
 
     /**

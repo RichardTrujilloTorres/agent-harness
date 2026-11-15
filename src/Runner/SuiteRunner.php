@@ -11,11 +11,11 @@ use Desemax\AgentHarness\Scenario\Scenario;
 /**
  * Runs a list of scenarios in order, re-running failed or errored ones up to $retries times.
  */
-final class SuiteRunner
+final readonly class SuiteRunner
 {
     public function __construct(
-        private readonly ScenarioRunner $runner = new ScenarioRunner(),
-        private readonly int $retries = 0,
+        private ScenarioRunner $runner = new ScenarioRunner(),
+        private int $retries = 0,
     ) {}
 
     /**
@@ -29,7 +29,7 @@ final class SuiteRunner
         foreach ($scenarios as $scenario) {
             $result = $this->runOne($scenario, $agent);
             $results[] = $result;
-            if ($onResult !== null) {
+            if ($onResult instanceof \Closure) {
                 $onResult($result);
             }
         }

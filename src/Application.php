@@ -10,8 +10,8 @@ use Symfony\Component\Console\Application as ConsoleApplication;
 
 final class Application extends ConsoleApplication
 {
-    public const NAME = 'agent-harness';
-    public const VERSION = '0.1.0';
+    public const string NAME = 'agent-harness';
+    public const string VERSION = '0.1.0';
 
     public function __construct()
     {

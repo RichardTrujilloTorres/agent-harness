@@ -6,7 +6,7 @@ namespace Desemax\AgentHarness\Scenario;
 
 final readonly class Scenario
 {
-    public const DEFAULT_MAX_TURNS = 10;
+    public const int DEFAULT_MAX_TURNS = 10;
 
     /**
      * @param list<Expectation> $expect

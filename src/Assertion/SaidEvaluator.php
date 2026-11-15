@@ -15,6 +15,7 @@ final class SaidEvaluator implements Evaluator
 {
     use PayloadReader;
 
+    #[\Override]
     public function evaluate(Expectation $expectation, Transcript $transcript): ExpectationResult
     {
         $text = $this->stringPayload($expectation);
@@ -34,7 +35,7 @@ final class SaidEvaluator implements Evaluator
             $label,
             $transcript->count(),
             $transcript->count() === 1 ? 'reply' : 'replies',
-            $last === null ? '' : sprintf('; last reply: %s', Text::quote(Text::excerpt($last->reply->reply, 0, 0, 80))),
+            $last instanceof \Desemax\AgentHarness\Runner\Turn ? sprintf('; last reply: %s', Text::quote(Text::excerpt($last->reply->reply, 0, 0, 80))) : '',
         ));
     }
 }

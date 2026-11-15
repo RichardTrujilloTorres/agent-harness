@@ -108,7 +108,7 @@ final class Conversation
         }
 
         $llm = $this->llm;
-        if ($llm === null && $config->llm !== null && self::needsLlm($scenario)) {
+        if (!$llm instanceof \Desemax\AgentHarness\Llm\LlmClient && $config->llm instanceof \Desemax\AgentHarness\Llm\LlmConfig && $this->needsLlm($scenario)) {
             $llm = OpenAiCompatibleClient::fromConfig($config->llm);
         }
 
@@ -127,7 +127,7 @@ final class Conversation
         return (new ScenarioLoader())->load($this->scenario)[0];
     }
 
-    private static function needsLlm(Scenario $scenario): bool
+    private function needsLlm(Scenario $scenario): bool
     {
         if ($scenario->user->mode === UserMode::Llm) {
             return true;

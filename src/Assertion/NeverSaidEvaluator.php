@@ -15,6 +15,7 @@ final class NeverSaidEvaluator implements Evaluator
 {
     use PayloadReader;
 
+    #[\Override]
     public function evaluate(Expectation $expectation, Transcript $transcript): ExpectationResult
     {
         $text = $this->stringPayload($expectation);

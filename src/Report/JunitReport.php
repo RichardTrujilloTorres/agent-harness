@@ -16,7 +16,7 @@ use DOMElement;
  */
 final class JunitReport
 {
-    public const SUITE_NAME = 'agent-harness';
+    public const string SUITE_NAME = 'agent-harness';
 
     public function render(SuiteResult $suite): string
     {
@@ -28,7 +28,7 @@ final class JunitReport
             'failures' => (string) $suite->count(ScenarioStatus::Failed),
             'errors' => (string) $suite->count(ScenarioStatus::Error),
             'skipped' => (string) $suite->count(ScenarioStatus::Skipped),
-            'time' => self::seconds($suite->durationMs),
+            'time' => $this->seconds($suite->durationMs),
         ];
 
         $root = $doc->createElement('testsuites');
@@ -60,17 +60,17 @@ final class JunitReport
         if ($result->scenario->file !== null) {
             $case->setAttribute('file', $result->scenario->file);
         }
-        $case->setAttribute('time', self::seconds($result->durationMs));
+        $case->setAttribute('time', $this->seconds($result->durationMs));
 
         switch ($result->status) {
             case ScenarioStatus::Failed:
                 $failures = $result->failures();
-                $case->appendChild($this->problem($doc, 'failure', $failures[0]->reason ?? 'failed', self::reasons($failures)));
+                $case->appendChild($this->problem($doc, 'failure', $failures[0]->reason ?? 'failed', $this->reasons($failures)));
                 break;
             case ScenarioStatus::Error:
                 $errors = $result->errors();
                 $message = $result->message ?? ($errors[0]->reason ?? 'error');
-                $case->appendChild($this->problem($doc, 'error', $message, $errors === [] ? $message : self::reasons($errors)));
+                $case->appendChild($this->problem($doc, 'error', $message, $errors === [] ? $message : $this->reasons($errors)));
                 break;
             case ScenarioStatus::Skipped:
                 $skipped = $doc->createElement('skipped');
@@ -83,7 +83,7 @@ final class JunitReport
         }
 
         $out = $doc->createElement('system-out');
-        $out->appendChild($doc->createTextNode(self::transcript($result)));
+        $out->appendChild($doc->createTextNode($this->transcript($result)));
         $case->appendChild($out);
 
         return $case;
@@ -92,7 +92,7 @@ final class JunitReport
     /**
      * @param list<ExpectationResult> $results
      */
-    private static function reasons(array $results): string
+    private function reasons(array $results): string
     {
         return implode("\n", array_map(static fn(ExpectationResult $r): string => $r->reason, $results));
     }
@@ -107,7 +107,7 @@ final class JunitReport
         return $el;
     }
 
-    private static function transcript(ScenarioResult $result): string
+    private function transcript(ScenarioResult $result): string
     {
         $lines = $result->transcript->lines();
         if ($result->message !== null) {
@@ -117,7 +117,7 @@ final class JunitReport
         return implode("\n", $lines);
     }
 
-    private static function seconds(int $ms): string
+    private function seconds(int $ms): string
     {
         return number_format($ms / 1000, 3, '.', '');
     }

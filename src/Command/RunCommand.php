@@ -41,12 +41,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'run', description: 'Play scenarios against an agent over HTTP and report pass or fail')]
 final class RunCommand extends Command
 {
-    public const EXIT_PASSED = 0;
-    public const EXIT_FAILED = 1;
-    public const EXIT_BAD_INPUT = 2;
-    public const EXIT_AGENT_ERROR = 3;
+    public const int EXIT_PASSED = 0;
+    public const int EXIT_FAILED = 1;
+    public const int EXIT_BAD_INPUT = 2;
+    public const int EXIT_AGENT_ERROR = 3;
 
-    private const STYLES = [
+    private const array STYLES = [
         'passed' => 'fg=green',
         'failed' => 'fg=red',
         'skipped' => 'fg=yellow',
@@ -54,21 +54,18 @@ final class RunCommand extends Command
         'flaky' => 'fg=yellow;options=bold',
     ];
 
-    /** @var Closure(LlmConfig): LlmClient */
-    private readonly Closure $llmFactory;
-
     /**
      * @param ?Closure(LlmConfig): LlmClient $llmFactory builds the LLM client from the llm section (default: OpenAI-compatible over HTTP)
      */
     public function __construct(
         private readonly ScenarioLoader $loader = new ScenarioLoader(),
         private readonly ConfigLoader $configLoader = new ConfigLoader(),
-        ?Closure $llmFactory = null,
+        private readonly ?Closure $llmFactory = null,
     ) {
-        $this->llmFactory = $llmFactory ?? static fn(LlmConfig $config): LlmClient => OpenAiCompatibleClient::fromConfig($config);
         parent::__construct();
     }
 
+    #[\Override]
     protected function configure(): void
     {
         $this
@@ -90,6 +87,7 @@ final class RunCommand extends Command
                 HELP);
     }
 
+    #[\Override]
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $path = $input->getArgument('path');
@@ -99,7 +97,7 @@ final class RunCommand extends Command
         if (!is_string($path) || ($url !== null && !is_string($url)) || ($configFile !== null && !is_string($configFile)) || ($filter !== null && !is_string($filter))) {
             return $this->fail($output, 'Arguments and options must be strings.');
         }
-        $seed = self::intOption($input->getOption('seed'));
+        $seed = $this->intOption($input->getOption('seed'));
         if ($input->getOption('seed') !== null && $seed === null) {
             return $this->fail($output, '--seed must be an integer.');
         }
@@ -114,7 +112,7 @@ final class RunCommand extends Command
             }
             $reports[$option] = $value;
         }
-        $retries = self::intOption($input->getOption('retries'));
+        $retries = $this->intOption($input->getOption('retries'));
         if ($retries === null || $retries < 0) {
             return $this->fail($output, '--retries must be an integer >= 0.');
         }
@@ -164,9 +162,9 @@ final class RunCommand extends Command
         }
 
         $llm = null;
-        if ($config->llm !== null && self::needsLlm($scenarios)) {
+        if ($config->llm instanceof \Desemax\AgentHarness\Llm\LlmConfig && $this->needsLlm($scenarios)) {
             try {
-                $llm = ($this->llmFactory)($config->llm);
+                $llm = $this->llmFactory instanceof Closure ? ($this->llmFactory)($config->llm) : OpenAiCompatibleClient::fromConfig($config->llm);
             } catch (LlmException $e) {
                 return $this->fail($output, $e->getMessage());
             }
@@ -210,7 +208,7 @@ final class RunCommand extends Command
         }
     }
 
-    private static function intOption(mixed $value): ?int
+    private function intOption(mixed $value): ?int
     {
         if (is_int($value)) {
             return $value;
@@ -225,7 +223,7 @@ final class RunCommand extends Command
     /**
      * @param list<Scenario> $scenarios
      */
-    private static function needsLlm(array $scenarios): bool
+    private function needsLlm(array $scenarios): bool
     {
         foreach ($scenarios as $scenario) {
             if ($scenario->user->mode === UserMode::Llm) {

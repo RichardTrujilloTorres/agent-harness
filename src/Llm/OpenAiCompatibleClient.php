@@ -12,14 +12,14 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 /**
  * Any server that speaks the OpenAI chat completions API: POST {base_url}/chat/completions.
  */
-final class OpenAiCompatibleClient implements LlmClient
+final readonly class OpenAiCompatibleClient implements LlmClient
 {
-    private readonly HttpClientInterface $client;
+    private HttpClientInterface $client;
 
     public function __construct(
-        private readonly LlmConfig $config,
+        private LlmConfig $config,
         #[\SensitiveParameter]
-        private readonly string $apiKey,
+        private string $apiKey,
         ?HttpClientInterface $client = null,
     ) {
         $this->client = $client ?? HttpClient::create();
@@ -43,6 +43,7 @@ final class OpenAiCompatibleClient implements LlmClient
         return new self($config, trim($key), $client);
     }
 
+    #[\Override]
     public function complete(string $system, array $messages, LlmOptions $options): string
     {
         $url = rtrim($this->config->baseUrl, '/') . '/chat/completions';
@@ -86,7 +87,7 @@ final class OpenAiCompatibleClient implements LlmClient
             throw new LlmException(sprintf('LLM at %s answered invalid JSON (%s): %s', $url, $e->getMessage(), self::excerpt($body)), 0, $e);
         }
 
-        $content = is_array($decoded) ? self::content($decoded) : null;
+        $content = is_array($decoded) ? $this->content($decoded) : null;
         if ($content === null) {
             throw new LlmException(sprintf('LLM at %s answered without choices[0].message.content: %s', $url, self::excerpt($body)));
         }
@@ -97,7 +98,7 @@ final class OpenAiCompatibleClient implements LlmClient
     /**
      * @param array<mixed> $body
      */
-    private static function content(array $body): ?string
+    private function content(array $body): ?string
     {
         $choices = $body['choices'] ?? null;
         if (!is_array($choices) || !isset($choices[0]) || !is_array($choices[0])) {

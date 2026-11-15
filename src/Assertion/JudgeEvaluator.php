@@ -18,13 +18,13 @@ use Desemax\AgentHarness\Scenario\Expectation;
  *
  * Skipped without an LLM. Invalid JSON from the judge is retried once, then reported as an error.
  */
-final class JudgeEvaluator implements Evaluator
+final readonly class JudgeEvaluator implements Evaluator
 {
     use PayloadReader;
 
-    public const SKIP_REASON = LlmConfig::NOT_CONFIGURED;
+    public const string SKIP_REASON = LlmConfig::NOT_CONFIGURED;
 
-    public const SYSTEM_PROMPT = <<<'PROMPT'
+    public const string SYSTEM_PROMPT = <<<'PROMPT'
         You are a strict reviewer of a conversation between a user and an automated agent.
         Decide whether the agent's behaviour in the transcript satisfies the rubric.
         Judge only what is in the transcript; do not assume anything that is not shown.
@@ -32,14 +32,15 @@ final class JudgeEvaluator implements Evaluator
         PROMPT;
 
     public function __construct(
-        private readonly ?LlmClient $client = null,
-        private readonly ?int $seed = null,
+        private ?LlmClient $client = null,
+        private ?int $seed = null,
     ) {}
 
+    #[\Override]
     public function evaluate(Expectation $expectation, Transcript $transcript): ExpectationResult
     {
         $rubric = $this->stringPayload($expectation);
-        if ($this->client === null) {
+        if (!$this->client instanceof \Desemax\AgentHarness\Llm\LlmClient) {
             return ExpectationResult::skipped($expectation, self::SKIP_REASON);
         }
 
@@ -51,7 +52,7 @@ final class JudgeEvaluator implements Evaluator
         try {
             for ($attempt = 1; $attempt <= 2; $attempt++) {
                 $raw = $this->client->complete(self::SYSTEM_PROMPT, $messages, $options);
-                $verdict = self::verdict($raw);
+                $verdict = $this->verdict($raw);
                 if ($verdict !== null) {
                     return $verdict['pass']
                         ? ExpectationResult::passed($expectation, sprintf('%s: pass: %s', $label, $verdict['reason']))
@@ -93,7 +94,7 @@ final class JudgeEvaluator implements Evaluator
     /**
      * @return ?array{pass: bool, reason: string}
      */
-    private static function verdict(string $raw): ?array
+    private function verdict(string $raw): ?array
     {
         $json = trim($raw);
         if (preg_match('/^```(?:json)?\s*(.*?)\s*```$/s', $json, $m) === 1) {
