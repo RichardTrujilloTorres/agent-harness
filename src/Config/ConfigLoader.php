@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Desemax\AgentHarness\Config;
 
+use Desemax\AgentHarness\Llm\LlmConfig;
 use Desemax\AgentHarness\Scenario\ValidationError;
 use InvalidArgumentException;
 use Symfony\Component\Yaml\Exception\ParseException;
@@ -20,6 +21,7 @@ final class ConfigLoader
         'agent' => ['url', 'timeout_ms', 'headers'],
         'request' => ['session_field', 'message_field'],
         'response' => ['reply', 'tool_calls', 'tool_name', 'tool_arguments', 'handoff'],
+        'llm' => ['base_url', 'model', 'api_key_env', 'timeout_ms', 'max_tokens'],
     ];
 
     /** @var list<ValidationError> */
@@ -77,16 +79,7 @@ final class ConfigLoader
             $this->error('agent.url', 'must start with http:// or https://');
         }
 
-        $timeout = HarnessConfig::DEFAULT_TIMEOUT_MS;
-        if (array_key_exists('timeout_ms', $agent)) {
-            if (!is_int($agent['timeout_ms'])) {
-                $this->error('agent.timeout_ms', 'must be an integer');
-            } elseif ($agent['timeout_ms'] < 1) {
-                $this->error('agent.timeout_ms', 'must be >= 1');
-            } else {
-                $timeout = $agent['timeout_ms'];
-            }
-        }
+        $timeout = $this->positiveInt($agent, 'timeout_ms', 'agent.timeout_ms') ?? HarnessConfig::DEFAULT_TIMEOUT_MS;
 
         $headers = [];
         if (array_key_exists('headers', $agent)) {
@@ -118,6 +111,7 @@ final class ConfigLoader
             toolArgumentsPath: $this->path($response, 'tool_arguments', 'response', 'arguments'),
             handoffPath: $this->path($response, 'handoff', 'response', 'handoff'),
             file: $file,
+            llm: $this->llm($data, $sections['llm']),
         );
 
         if ($config->sessionField === $config->messageField) {
@@ -129,6 +123,68 @@ final class ConfigLoader
         }
 
         return $config;
+    }
+
+    /**
+     * The optional llm section; null when absent.
+     *
+     * @param array<mixed> $data
+     * @param array<mixed> $llm
+     */
+    private function llm(array $data, array $llm): ?LlmConfig
+    {
+        if (!array_key_exists('llm', $data) || !$this->isMap($data['llm'])) {
+            return null;
+        }
+
+        $baseUrl = $this->optionalString($llm, 'base_url', 'llm.base_url');
+        if (!array_key_exists('base_url', $llm)) {
+            $this->error('llm.base_url', 'required field is missing');
+        } elseif ($baseUrl !== null && preg_match('#^https?://#i', $baseUrl) !== 1) {
+            $this->error('llm.base_url', 'must start with http:// or https://');
+            $baseUrl = null;
+        }
+
+        $model = $this->optionalString($llm, 'model', 'llm.model');
+        if (!array_key_exists('model', $llm)) {
+            $this->error('llm.model', 'required field is missing');
+        }
+
+        $apiKeyEnv = $this->optionalString($llm, 'api_key_env', 'llm.api_key_env') ?? LlmConfig::DEFAULT_API_KEY_ENV;
+        if (preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $apiKeyEnv) !== 1) {
+            $this->error('llm.api_key_env', sprintf('must be an environment variable name like %s, got "%s"', LlmConfig::DEFAULT_API_KEY_ENV, $apiKeyEnv));
+        }
+
+        $timeout = $this->positiveInt($llm, 'timeout_ms', 'llm.timeout_ms') ?? LlmConfig::DEFAULT_TIMEOUT_MS;
+        $maxTokens = $this->positiveInt($llm, 'max_tokens', 'llm.max_tokens');
+
+        if ($baseUrl === null || $model === null) {
+            return null;
+        }
+
+        return new LlmConfig($baseUrl, $model, $apiKeyEnv, $timeout, $maxTokens);
+    }
+
+    /**
+     * @param array<mixed> $data
+     */
+    private function positiveInt(array $data, string $key, string $path): ?int
+    {
+        if (!array_key_exists($key, $data) || $data[$key] === null) {
+            return null;
+        }
+        if (!is_int($data[$key])) {
+            $this->error($path, 'must be an integer');
+
+            return null;
+        }
+        if ($data[$key] < 1) {
+            $this->error($path, 'must be >= 1');
+
+            return null;
+        }
+
+        return $data[$key];
     }
 
     /**

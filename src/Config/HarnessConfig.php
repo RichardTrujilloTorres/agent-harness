@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Desemax\AgentHarness\Config;
 
+use Desemax\AgentHarness\Llm\LlmConfig;
+
 final readonly class HarnessConfig
 {
     public const DEFAULT_TIMEOUT_MS = 10000;
@@ -23,6 +25,7 @@ final readonly class HarnessConfig
         public string $toolArgumentsPath = 'arguments',
         public string $handoffPath = 'handoff',
         public ?string $file = null,
+        public ?LlmConfig $llm = null,
     ) {
     }
 
@@ -40,6 +43,7 @@ final readonly class HarnessConfig
             $this->toolArgumentsPath,
             $this->handoffPath,
             $this->file,
+            $this->llm,
         );
     }
 }
