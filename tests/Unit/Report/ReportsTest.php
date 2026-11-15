@@ -194,15 +194,25 @@ describe('transcripts', function (): void {
     });
 
     it('writes the files into a new directory', function (): void {
-        $dir = sys_get_temp_dir() . '/agent-harness-transcripts-' . bin2hex(random_bytes(4)) . '/nested';
+        $root = sys_get_temp_dir() . '/agent-harness-transcripts-' . bin2hex(random_bytes(4));
+        $dir = $root . '/nested';
+        $cwd = (string) getcwd();
+        mkdir($root);
+        chdir($root);
+        try {
+            $paths = (new TranscriptReport())->write(fakeSuite(), $dir);
 
-        $paths = (new TranscriptReport())->write(fakeSuite(), $dir);
-
-        expect($paths)->toHaveCount(5)
-            ->and(is_file($dir . '/large-party.json'))->toBeTrue();
-        array_map(unlink(...), $paths);
-        rmdir($dir);
-        rmdir(dirname($dir));
+            expect($paths)->toBe([
+                $dir . '/happy-path-booking.json',
+                $dir . '/large-party.json',
+                $dir . '/agent-down.json',
+                $dir . '/llm-user.json',
+                $dir . '/happy-path-booking-2.json',
+            ])->and(is_file($dir . '/large-party.json'))->toBeTrue();
+        } finally {
+            chdir($cwd);
+            exec('rm -rf ' . escapeshellarg($root));
+        }
     });
 
     it('slugifies names', function (string $name, string $slug): void {

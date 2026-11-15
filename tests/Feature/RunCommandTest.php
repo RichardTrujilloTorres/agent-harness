@@ -152,9 +152,18 @@ it('exits 2 with the validate output when a scenario is invalid', function (): v
 });
 
 it('exits 2 on bad input', function (array $options, string $message, string $path = 'examples/scenarios'): void {
-    $tester = runScenarios(projectRoot() . '/' . $path, stringKeyed($options));
+    $directory = sys_get_temp_dir() . '/agent-harness-bad-input-' . bin2hex(random_bytes(4));
+    $cwd = (string) getcwd();
+    mkdir($directory);
+    chdir($directory);
+    try {
+        $tester = runScenarios(projectRoot() . '/' . $path, stringKeyed($options));
 
-    expect($tester->getStatusCode())->toBe(2)->and($tester->getDisplay())->toContain($message);
+        expect($tester->getStatusCode())->toBe(2)->and($tester->getDisplay())->toContain($message);
+    } finally {
+        chdir($cwd);
+        exec('rm -rf ' . escapeshellarg($directory));
+    }
 })->with([
     'missing path' => [['--url' => 'http://x/chat'], 'Path does not exist', 'nope'],
     'no url' => [[], 'No agent URL: pass --url or set agent.url'],
