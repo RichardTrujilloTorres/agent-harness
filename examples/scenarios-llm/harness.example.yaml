@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../../schema/harness.schema.json
 # Example harness.yaml for the LLM-played user and the LLM judge.
 # Copy it to ./harness.yaml (or pass it with --config) and adjust, then:
 #   export HARNESS_LLM_API_KEY=...

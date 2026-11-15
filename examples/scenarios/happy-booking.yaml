@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../../schema/scenario.schema.json
 name: Happy path booking
 persona: A friendly customer who answers every question
 goal: Book a table for 4 on Saturday at 20:00

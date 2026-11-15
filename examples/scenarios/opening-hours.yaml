@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../../schema/scenario.schema.json
 name: Opening hours question
 persona: A customer planning a visit
 goal: Find out when the restaurant is open

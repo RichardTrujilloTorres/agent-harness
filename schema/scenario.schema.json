@@ -1,0 +1,70 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://example.invalid/agent-harness/scenario.schema.json",
+    "title": "Agent Harness scenario",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["name", "user", "expect"],
+    "properties": {
+        "name": {"type": "string", "pattern": "\\S"},
+        "persona": {"type": "string"},
+        "goal": {"type": "string"},
+        "max_turns": {"type": "integer", "minimum": 1},
+        "user": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["mode"],
+            "properties": {
+                "mode": {"enum": ["scripted", "llm"]},
+                "turns": {"type": "array", "items": {"type": "string", "pattern": "\\S"}},
+                "opening": {"type": "string", "pattern": "\\S"}
+            },
+            "oneOf": [
+                {
+                    "required": ["mode", "turns"],
+                    "not": {"required": ["opening"]},
+                    "properties": {
+                        "mode": {"const": "scripted"},
+                        "turns": {"minItems": 1}
+                    }
+                },
+                {
+                    "required": ["mode"],
+                    "properties": {"mode": {"const": "llm"}}
+                }
+            ]
+        },
+        "expect": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "minProperties": 1,
+                "maxProperties": 1,
+                "oneOf": [
+                    {
+                        "required": ["tool_called"],
+                        "additionalProperties": false,
+                        "properties": {
+                            "tool_called": {
+                                "type": "object",
+                                "required": ["name"],
+                                "additionalProperties": false,
+                                "properties": {
+                                    "name": {"type": "string", "pattern": "\\S"},
+                                    "args": {"type": "object"}
+                                }
+                            }
+                        }
+                    },
+                    {"required": ["said"], "additionalProperties": false, "properties": {"said": {"type": "string", "pattern": "\\S"}}},
+                    {"required": ["never_said"], "additionalProperties": false, "properties": {"never_said": {"type": "string", "pattern": "\\S"}}},
+                    {"required": ["handoff"], "additionalProperties": false, "properties": {"handoff": {"type": "boolean"}}},
+                    {"required": ["max_turns"], "additionalProperties": false, "properties": {"max_turns": {"type": "integer", "minimum": 1}}},
+                    {"required": ["latency_ms_under"], "additionalProperties": false, "properties": {"latency_ms_under": {"type": "integer", "minimum": 1}}},
+                    {"required": ["judge"], "additionalProperties": false, "properties": {"judge": {"type": "string", "pattern": "\\S"}}}
+                ]
+            }
+        }
+    }
+}

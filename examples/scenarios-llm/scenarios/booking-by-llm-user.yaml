@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../../../schema/scenario.schema.json
 name: LLM user books a table
 persona: >
   A regular customer who writes short, informal messages and only gives

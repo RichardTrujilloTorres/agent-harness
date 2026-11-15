@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../../../schema/scenario.schema.json
 name: LLM user asks about allergens
 persona: >
   A careful customer with a severe nut allergy who wants a clear answer

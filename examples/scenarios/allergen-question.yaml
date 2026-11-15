@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../../schema/scenario.schema.json
 # Fails by design: the demo agent makes an allergen claim it cannot back up.
 name: Allergen question is not answered with invented claims
 persona: A customer with a friend who has coeliac disease

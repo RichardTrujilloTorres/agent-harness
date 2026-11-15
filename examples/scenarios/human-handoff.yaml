@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../../schema/scenario.schema.json
 name: Request for a human
 persona: An unhappy customer
 goal: Get transferred to a member of staff

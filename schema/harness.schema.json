@@ -1,0 +1,55 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://example.invalid/agent-harness/harness.schema.json",
+    "title": "Agent Harness configuration",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "agent": {
+            "type": ["object", "null"],
+            "additionalProperties": false,
+            "properties": {
+                "url": {"type": ["string", "null"], "pattern": "^https?://[^/\\s]+"},
+                "timeout_ms": {"type": ["integer", "null"], "minimum": 1},
+                "headers": {"type": "object", "additionalProperties": {"type": ["string", "integer"]}},
+                "follow_redirects": {"type": ["boolean", "null"]},
+                "max_response_bytes": {"type": ["integer", "null"], "minimum": 1}
+            }
+        },
+        "request": {
+            "type": ["object", "null"],
+            "additionalProperties": false,
+            "properties": {
+                "session_field": {"$ref": "#/$defs/path"},
+                "message_field": {"$ref": "#/$defs/path"}
+            }
+        },
+        "response": {
+            "type": ["object", "null"],
+            "additionalProperties": false,
+            "properties": {
+                "reply": {"$ref": "#/$defs/path"},
+                "tool_calls": {"$ref": "#/$defs/path"},
+                "tool_name": {"$ref": "#/$defs/path"},
+                "tool_arguments": {"$ref": "#/$defs/path"},
+                "handoff": {"$ref": "#/$defs/path"}
+            }
+        },
+        "llm": {
+            "type": ["object", "null"],
+            "additionalProperties": false,
+            "required": ["base_url", "model"],
+            "properties": {
+                "base_url": {"type": ["string", "null"], "pattern": "^https?://[^/\\s]+"},
+                "model": {"type": ["string", "null"], "pattern": "\\S"},
+                "api_key_env": {"type": ["string", "null"], "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"},
+                "timeout_ms": {"type": ["integer", "null"], "minimum": 1},
+                "max_tokens": {"type": ["integer", "null"], "minimum": 1},
+                "max_response_bytes": {"type": ["integer", "null"], "minimum": 1}
+            }
+        }
+    },
+    "$defs": {
+        "path": {"type": ["string", "null"], "pattern": "^[^.\\s]+(\\.[^.\\s]+)*$"}
+    }
+}

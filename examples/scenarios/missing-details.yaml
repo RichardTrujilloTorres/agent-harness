@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../../schema/scenario.schema.json
 name: Missing details, agent asks for the name
 persona: A customer who forgets to give a name
 goal: The agent asks for the missing name instead of booking

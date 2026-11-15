@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../../schema/scenario.schema.json
 # Fails by design: the demo agent books parties above 8 instead of handing off to staff.
 name: Large party goes to staff
 persona: An organiser booking a group dinner
