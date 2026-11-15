@@ -283,3 +283,64 @@ it('rejects bad --seed and --retries values', function (array $options, string $
     'retries negative' => [['--retries' => '-1'], '--retries must be an integer >= 0, got "-1".'],
     'retries text' => [['--retries' => 'two'], '--retries must be an integer >= 0, got "two".'],
 ]);
+
+it('stops after the first failure with --fail-fast', function (): void {
+    AgentServer::startShared(projectRoot() . '/examples/demo-agent/public');
+    try {
+        $tester = runScenarios(projectRoot() . '/examples/scenarios', [
+            '--url' => AgentServer::shared()->url('/chat'),
+            '--fail-fast' => true,
+        ]);
+    } finally {
+        AgentServer::stopShared();
+    }
+
+    expect($tester->getStatusCode())->toBe(1)
+        ->and($tester->getDisplay())->toContain('FAIL   Allergen question')
+        ->and($tester->getDisplay())->not->toContain('Happy path booking  (')
+        ->and($tester->getDisplay())->toContain('stopped by --fail-fast, 5 not run');
+});
+
+it('writes one stable JSON document for a run', function (): void {
+    AgentServer::startShared(projectRoot() . '/examples/demo-agent/public');
+    try {
+        $tester = runScenarios(projectRoot() . '/examples/scenarios', [
+            '--url' => AgentServer::shared()->url('/chat'),
+            '--format' => 'json',
+        ]);
+    } finally {
+        AgentServer::stopShared();
+    }
+    $json = jsonArray($tester->getDisplay());
+    $summary = arrayAt($json, 'summary');
+
+    expect($tester->getStatusCode())->toBe(1)
+        ->and($json['schema_version'])->toBe(1)
+        ->and($json['command'])->toBe('run')
+        ->and($json['ok'])->toBeFalse()
+        ->and($json['exit_code'])->toBe(1)
+        ->and($summary['scenarios'])->toBe(6)
+        ->and($summary['run'])->toBe(6)
+        ->and($summary['passed'])->toBe(4)
+        ->and($summary['failed'])->toBe(2)
+        ->and(arrayAt($json, 'scenarios'))->toHaveCount(6)
+        ->and($tester->getDisplay())->not->toMatch('/\x1B\[/');
+});
+
+it('writes structured JSON for invalid scenarios and config files', function (): void {
+    $invalidScenarios = runScenarios(fixture('mixed'), ['--format' => 'json']);
+    $scenarioJson = jsonArray($invalidScenarios->getDisplay());
+
+    $config = sys_get_temp_dir() . '/agent-harness-json-config-' . bin2hex(random_bytes(4)) . '.yaml';
+    file_put_contents($config, "agent:\n  timeout_ms: 0\n");
+    $invalidConfig = runScenarios(projectRoot() . '/examples/scenarios', ['--format' => 'json', '--config' => $config]);
+    $configJson = jsonArray($invalidConfig->getDisplay());
+    unlink($config);
+
+    expect($invalidScenarios->getStatusCode())->toBe(2)
+        ->and($scenarioJson['error'])->toContain('Invalid scenario files')
+        ->and(arrayAt($scenarioJson, 'validation'))->toHaveKey('files')
+        ->and($invalidConfig->getStatusCode())->toBe(2)
+        ->and($configJson['error'])->toContain('Invalid config ' . $config)
+        ->and(arrayAt($configJson, 'config_errors')[0])->toBe(['path' => 'agent.timeout_ms', 'message' => 'must be >= 1']);
+});
