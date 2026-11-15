@@ -34,7 +34,7 @@ final class ScenarioValidator
 
         foreach (array_keys($data) as $key) {
             if (!in_array($key, self::TOP_LEVEL_KEYS, true)) {
-                $this->error((string) $key, 'unknown field');
+                $this->error((string) $key, Suggest::unknown('field', (string) $key, self::TOP_LEVEL_KEYS));
             }
         }
 
@@ -58,7 +58,7 @@ final class ScenarioValidator
     private function validateUser(array $data): void
     {
         if (!array_key_exists('user', $data)) {
-            $this->error('user', 'required field is missing');
+            $this->error('user', 'required field is missing; add user: with mode: scripted and a list of turns, or mode: llm');
 
             return;
         }
@@ -72,15 +72,15 @@ final class ScenarioValidator
 
         foreach (array_keys($user) as $key) {
             if (!in_array($key, self::USER_KEYS, true)) {
-                $this->error('user.' . $key, 'unknown field');
+                $this->error('user.' . $key, Suggest::unknown('field', (string) $key, self::USER_KEYS));
             }
         }
 
         $mode = null;
         if (!array_key_exists('mode', $user)) {
-            $this->error('user.mode', 'required field is missing');
+            $this->error('user.mode', 'required field is missing; set it to scripted or llm');
         } elseif (!is_string($user['mode']) || ($mode = UserMode::tryFrom($user['mode'])) === null) {
-            $this->error('user.mode', 'must be one of: scripted, llm');
+            $this->error('user.mode', is_string($user['mode']) ? Suggest::unknown('mode', $user['mode'], ['scripted', 'llm']) : 'must be one of: scripted, llm');
         }
 
         if (array_key_exists('turns', $user)) {
@@ -98,7 +98,7 @@ final class ScenarioValidator
                 }
             }
         } elseif ($mode === UserMode::Scripted) {
-            $this->error('user.turns', 'required when mode is scripted');
+            $this->error('user.turns', 'required when mode is scripted; add the user messages as a list of strings');
         }
 
         if (array_key_exists('opening', $user)) {
@@ -116,7 +116,7 @@ final class ScenarioValidator
     private function validateExpect(array $data): void
     {
         if (!array_key_exists('expect', $data)) {
-            $this->error('expect', 'required field is missing');
+            $this->error('expect', 'required field is missing; add a list of expectations, for example expect: [{said: hello}]');
 
             return;
         }
@@ -129,7 +129,7 @@ final class ScenarioValidator
         }
 
         if ($expect === []) {
-            $this->error('expect', 'must not be empty');
+            $this->error('expect', 'must not be empty; add at least one expectation such as said, tool_called or judge');
 
             return;
         }
@@ -138,19 +138,19 @@ final class ScenarioValidator
             $path = sprintf('expect[%d]', $i);
 
             if (!$this->isMap($item) || $item === []) {
-                $this->error($path, 'must be a map with exactly one key');
+                $this->error($path, 'must be a map with exactly one key, the expectation type, for example said: hello');
                 continue;
             }
 
             if (count($item) !== 1) {
-                $this->error($path, sprintf('must have exactly one key, found %d: %s', count($item), implode(', ', array_keys($item))));
+                $this->error($path, sprintf('must have exactly one key, found %d: %s; put each expectation in its own list item', count($item), implode(', ', array_keys($item))));
                 continue;
             }
 
             $key = (string) array_key_first($item);
             $type = ExpectationType::tryFrom($key);
             if ($type === null) {
-                $this->error($path . '.' . $key, 'unknown expectation; allowed: ' . implode(', ', array_column(ExpectationType::cases(), 'value')));
+                $this->error($path . '.' . $key, Suggest::unknown('expectation', $key, array_column(ExpectationType::cases(), 'value')));
                 continue;
             }
 
@@ -169,7 +169,7 @@ final class ScenarioValidator
                 }
                 foreach (array_keys($payload) as $key) {
                     if (!in_array($key, self::TOOL_CALLED_KEYS, true)) {
-                        $this->error($path . '.' . $key, 'unknown field');
+                        $this->error($path . '.' . $key, Suggest::unknown('field', (string) $key, self::TOOL_CALLED_KEYS));
                     }
                 }
                 $this->requireNonEmptyString($payload, 'name', $path . '.name');

@@ -68,8 +68,8 @@ it('collects every error with field paths', function (): void {
         'response' => ['reply' => 'a..b'],
         'extra' => true,
     ]))->toBe([
-        'extra: unknown field; allowed: agent, request, response, llm',
-        'agent.retries: unknown field; allowed: url, timeout_ms, headers, follow_redirects, max_response_bytes',
+        'extra: unknown field "extra"; allowed: agent, request, response, llm',
+        'agent.retries: unknown field "retries"; allowed: url, timeout_ms, headers, follow_redirects, max_response_bytes',
         'request: must be a map',
         'agent.url: must be an http:// or https:// URL with a host, got "localhost"',
         'agent.timeout_ms: must be >= 1',
@@ -123,7 +123,7 @@ describe('llm section', function (): void {
 
     it('collects every error', function (): void {
         expect(configErrors(['llm' => ['base_url' => 'llm.test', 'api_key_env' => 'not a name', 'timeout_ms' => 0, 'max_tokens' => 'many', 'temperature' => 1]]))->toBe([
-            'llm.temperature: unknown field; allowed: base_url, model, api_key_env, timeout_ms, max_tokens, max_response_bytes',
+            'llm.temperature: unknown field "temperature"; allowed: base_url, model, api_key_env, timeout_ms, max_tokens, max_response_bytes',
             'llm.base_url: must be an http:// or https:// URL with a host, got "llm.test"',
             'llm.model: required field is missing',
             'llm.api_key_env: must be an environment variable name like HARNESS_LLM_API_KEY, got "not a name"',

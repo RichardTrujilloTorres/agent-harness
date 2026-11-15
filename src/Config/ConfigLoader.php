@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Desemax\AgentHarness\Config;
 
 use Desemax\AgentHarness\Llm\LlmConfig;
+use Desemax\AgentHarness\Scenario\Suggest;
 use Desemax\AgentHarness\Scenario\ValidationError;
 use Desemax\AgentHarness\Scenario\YamlException;
 use Desemax\AgentHarness\Scenario\YamlReader;
@@ -64,7 +65,7 @@ final class ConfigLoader
 
         foreach (array_keys($data) as $key) {
             if (!array_key_exists((string) $key, self::SECTIONS)) {
-                $this->error((string) $key, 'unknown field; allowed: ' . implode(', ', array_keys(self::SECTIONS)));
+                $this->error((string) $key, Suggest::unknown('field', (string) $key, array_keys(self::SECTIONS)));
             }
         }
 
@@ -220,7 +221,7 @@ final class ConfigLoader
 
         foreach (array_keys($value) as $key) {
             if (!in_array($key, $keys, true)) {
-                $this->error($section . '.' . $key, 'unknown field; allowed: ' . implode(', ', $keys));
+                $this->error($section . '.' . $key, Suggest::unknown('field', (string) $key, $keys));
             }
         }
 
