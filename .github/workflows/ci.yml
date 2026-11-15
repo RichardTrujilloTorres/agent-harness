@@ -155,7 +155,9 @@ jobs:
           coverage: none
       - run: composer install --no-progress --prefer-dist
       - name: Examples are valid scenarios
-        run: bin/agent-harness validate examples
+        run: |
+          bin/agent-harness validate examples/scenarios
+          bin/agent-harness validate examples/scenarios-llm/scenarios
       - name: Examples and fixtures match the JSON schemas
         run: composer schema
 
