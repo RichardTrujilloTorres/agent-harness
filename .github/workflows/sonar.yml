@@ -1,0 +1,49 @@
+name: SonarCloud
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sonar-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sonar:
+    name: SonarCloud scan
+    runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    steps:
+      - name: Skip when SONAR_TOKEN is not set
+        if: env.SONAR_TOKEN == ''
+        run: echo "SONAR_TOKEN is not set; skipping the SonarCloud scan."
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: env.SONAR_TOKEN != ''
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        if: env.SONAR_TOKEN != ''
+        with:
+          php-version: '8.3'
+          coverage: pcov
+      - if: env.SONAR_TOKEN != ''
+        run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Tests with clover coverage and JUnit
+        if: env.SONAR_TOKEN != ''
+        run: composer coverage -- --coverage-clover build/coverage/clover.xml --log-junit build/junit.xml
+      - uses: SonarSource/sonarqube-scan-action@59202af334b4ba7b5db01b701b8e79f8b3bef0f4 # v8.5.0
+        if: env.SONAR_TOKEN != ''
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          # Set these two repository variables (Settings > Secrets and variables > Actions > Variables).
+          args: >
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
+            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
