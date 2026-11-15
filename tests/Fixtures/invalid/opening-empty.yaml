@@ -1,0 +1,6 @@
+name: Opening must be text
+user:
+  mode: llm
+  opening: ""
+expect:
+  - said: hello

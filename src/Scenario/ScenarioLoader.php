@@ -124,7 +124,11 @@ final class ScenarioLoader
 
         return new Scenario(
             name: $this->string($data['name']),
-            user: new UserScript(UserMode::from($this->string($user['mode'])), $turns),
+            user: new UserScript(
+                UserMode::from($this->string($user['mode'])),
+                $turns,
+                isset($user['opening']) ? $this->string($user['opening']) : null,
+            ),
             expect: $expect,
             maxTurns: isset($data['max_turns']) ? $this->int($data['max_turns']) : Scenario::DEFAULT_MAX_TURNS,
             persona: isset($data['persona']) ? $this->string($data['persona']) : null,

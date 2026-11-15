@@ -1,0 +1,9 @@
+name: LLM user with an opening line
+persona: A patient customer
+goal: Find out when the shop opens on Sunday
+user:
+  mode: llm
+  opening: Hi, are you open on Sundays?
+max_turns: 4
+expect:
+  - said: sunday

@@ -1,0 +1,8 @@
+name: Opening only for llm users
+user:
+  mode: scripted
+  opening: Hello
+  turns:
+    - Hello
+expect:
+  - said: hello

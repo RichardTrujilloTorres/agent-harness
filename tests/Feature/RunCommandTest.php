@@ -102,7 +102,7 @@ it('remaps request and response fields end to end with a config file', function 
         ->and($display)->toContain('✓ handoff true: handed off in turn 2')
         ->and($display)->toContain('tool:  lookup_order {"order_id":42,"customer":{"email":"test@example.com"}}')
         ->and($display)->toMatch('/^SKIP   LLM-played user is skipped  \(0 turns, \d+ ms\)$/m')
-        ->and($display)->toContain('LLM-played user not available yet')
+        ->and($display)->toContain('no llm configured in harness.yaml')
         ->and($display)->toContain('2 scenario(s): 1 passed, 0 failed, 1 skipped, 0 errors');
 });
 

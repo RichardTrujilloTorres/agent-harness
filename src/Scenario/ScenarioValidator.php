@@ -10,7 +10,7 @@ namespace Desemax\AgentHarness\Scenario;
 final class ScenarioValidator
 {
     private const TOP_LEVEL_KEYS = ['name', 'persona', 'goal', 'user', 'max_turns', 'expect'];
-    private const USER_KEYS = ['mode', 'turns'];
+    private const USER_KEYS = ['mode', 'turns', 'opening'];
     private const TOOL_CALLED_KEYS = ['name', 'args'];
 
     /** @var list<ValidationError> */
@@ -99,6 +99,14 @@ final class ScenarioValidator
             }
         } elseif ($mode === UserMode::Scripted) {
             $this->error('user.turns', 'required when mode is scripted');
+        }
+
+        if (array_key_exists('opening', $user)) {
+            if (!is_string($user['opening']) || trim($user['opening']) === '') {
+                $this->error('user.opening', 'must be a non-empty string');
+            } elseif ($mode === UserMode::Scripted) {
+                $this->error('user.opening', 'only used when mode is llm; put the first message in turns');
+            }
         }
     }
 

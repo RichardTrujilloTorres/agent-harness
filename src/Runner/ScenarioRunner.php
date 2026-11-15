@@ -9,6 +9,9 @@ use Desemax\AgentHarness\Agent\AgentAdapter;
 use Desemax\AgentHarness\Agent\AgentException;
 use Desemax\AgentHarness\Assertion\Evaluator;
 use Desemax\AgentHarness\Assertion\EvaluatorRegistry;
+use Desemax\AgentHarness\Llm\LlmClient;
+use Desemax\AgentHarness\Llm\LlmConfig;
+use Desemax\AgentHarness\Llm\LlmException;
 use Desemax\AgentHarness\Scenario\Scenario;
 use Desemax\AgentHarness\Scenario\UserMode;
 
@@ -17,17 +20,18 @@ use Desemax\AgentHarness\Scenario\UserMode;
  */
 final class ScenarioRunner
 {
-    public const LLM_USER_SKIP_REASON = 'LLM-played user not available yet';
-
     /** @var Closure(): string */
     private readonly Closure $sessionIds;
 
     /**
      * @param ?Closure(): string $sessionIds generates a new session id per scenario
+     * @param ?LlmClient $llm plays llm-mode users; without it those scenarios are skipped
      */
     public function __construct(
         private readonly Evaluator $evaluator = new EvaluatorRegistry(),
         ?Closure $sessionIds = null,
+        private readonly ?LlmClient $llm = null,
+        private readonly ?int $seed = null,
     ) {
         $this->sessionIds = $sessionIds ?? static fn (): string => 'harness-' . bin2hex(random_bytes(8));
     }
@@ -37,14 +41,20 @@ final class ScenarioRunner
         $start = hrtime(true);
         $transcript = new Transcript();
 
+        $user = null;
         if ($scenario->user->mode === UserMode::Llm) {
-            return new ScenarioResult($scenario, ScenarioStatus::Skipped, $transcript, [], 0, self::LLM_USER_SKIP_REASON);
+            if ($this->llm === null) {
+                return new ScenarioResult($scenario, ScenarioStatus::Skipped, $transcript, [], 0, LlmConfig::NOT_CONFIGURED);
+            }
+            $user = new LlmUser($this->llm, $this->seed);
         }
 
         $sessionId = ($this->sessionIds)();
+        $scripted = $scenario->user->turns;
         try {
-            foreach ($scenario->user->turns as $message) {
-                if ($transcript->count() >= $scenario->maxTurns) {
+            while ($transcript->count() < $scenario->maxTurns) {
+                $message = $user === null ? ($scripted[$transcript->count()] ?? null) : $user->next($scenario, $transcript);
+                if ($message === null) {
                     break;
                 }
                 $transcript = $transcript->with($message, $agent->send($sessionId, $message));
@@ -54,6 +64,8 @@ final class ScenarioRunner
             }
         } catch (AgentException $e) {
             return new ScenarioResult($scenario, ScenarioStatus::Error, $transcript, [], self::elapsedMs($start), $e->getMessage());
+        } catch (LlmException $e) {
+            return new ScenarioResult($scenario, ScenarioStatus::Error, $transcript, [], self::elapsedMs($start), 'LLM-played user: ' . $e->getMessage());
         }
 
         $results = [];

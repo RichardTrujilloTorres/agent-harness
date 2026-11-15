@@ -22,7 +22,7 @@ function errorsOf(string $fixture): array
 
 it('accepts the valid fixtures', function (string $file): void {
     expect((new ScenarioLoader())->check(fixture($file)))->toBe([]);
-})->with(['valid/full.yaml', 'valid/nested/llm-mode.yml']);
+})->with(['valid/full.yaml', 'valid/nested/llm-mode.yml', 'valid/nested/llm-opening.yaml']);
 
 it('reports a rule violation with field path and reason', function (string $fixture, string $path, string $reason): void {
     expect(errorsOf($fixture))->toContain([$path, $reason]);
@@ -48,6 +48,8 @@ it('reports a rule violation with field path and reason', function (string $fixt
     'tool_called.args map' => ['tool-called-args-not-map', 'expect[0].tool_called.args', 'must be a map'],
     'handoff bool' => ['handoff-not-bool', 'expect[0].handoff', 'must be a boolean'],
     'said non-empty' => ['said-empty', 'expect[0].said', 'must be a non-empty string'],
+    'opening non-empty' => ['opening-empty', 'user.opening', 'must be a non-empty string'],
+    'opening only for llm' => ['opening-scripted', 'user.opening', 'only used when mode is llm; put the first message in turns'],
 ]);
 
 it('reports exactly one error for a single-rule fixture', function (): void {

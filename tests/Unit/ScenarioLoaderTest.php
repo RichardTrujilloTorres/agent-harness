@@ -35,7 +35,7 @@ it('loads a directory recursively, .yaml and .yml, sorted', function (): void {
     $scenarios = (new ScenarioLoader())->load(fixture('valid'));
 
     expect(array_map(fn (Scenario $s): string => $s->name, $scenarios))
-        ->toBe(['Full scenario', 'LLM user without turns']);
+        ->toBe(['Full scenario', 'LLM user without turns', 'LLM user with an opening line']);
 });
 
 it('applies defaults for optional fields', function (): void {
@@ -45,7 +45,15 @@ it('applies defaults for optional fields', function (): void {
         ->and($s->persona)->toBeNull()
         ->and($s->goal)->toBeNull()
         ->and($s->user->mode)->toBe(UserMode::Llm)
-        ->and($s->user->turns)->toBe([]);
+        ->and($s->user->turns)->toBe([])
+        ->and($s->user->opening)->toBeNull();
+});
+
+it('reads the opening line of an LLM user', function (): void {
+    $s = (new ScenarioLoader())->load(fixture('valid/nested/llm-opening.yaml'))[0];
+
+    expect($s->user->opening)->toBe('Hi, are you open on Sundays?')
+        ->and($s->goal)->toBe('Find out when the shop opens on Sunday');
 });
 
 it('throws with all errors when a file is invalid', function (): void {

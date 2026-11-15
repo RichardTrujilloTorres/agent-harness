@@ -4,18 +4,25 @@ declare(strict_types=1);
 
 namespace Desemax\AgentHarness\Command;
 
+use Closure;
 use Desemax\AgentHarness\Agent\AgentAdapter;
 use Desemax\AgentHarness\Agent\HttpAgentAdapter;
 use Desemax\AgentHarness\Agent\ToolCall;
 use Desemax\AgentHarness\Config\ConfigLoader;
 use Desemax\AgentHarness\Config\HarnessConfig;
 use Desemax\AgentHarness\Config\InvalidConfigException;
+use Desemax\AgentHarness\Llm\LlmClient;
+use Desemax\AgentHarness\Llm\LlmConfig;
+use Desemax\AgentHarness\Llm\LlmException;
+use Desemax\AgentHarness\Llm\OpenAiCompatibleClient;
 use Desemax\AgentHarness\Runner\ExpectationStatus;
 use Desemax\AgentHarness\Runner\ScenarioResult;
 use Desemax\AgentHarness\Runner\ScenarioRunner;
 use Desemax\AgentHarness\Runner\ScenarioStatus;
+use Desemax\AgentHarness\Scenario\ExpectationType;
 use Desemax\AgentHarness\Scenario\Scenario;
 use Desemax\AgentHarness\Scenario\ScenarioLoader;
+use Desemax\AgentHarness\Scenario\UserMode;
 use InvalidArgumentException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -39,11 +46,18 @@ final class RunCommand extends Command
         'error' => 'fg=red;options=bold',
     ];
 
+    /** @var Closure(LlmConfig): LlmClient */
+    private readonly Closure $llmFactory;
+
+    /**
+     * @param ?Closure(LlmConfig): LlmClient $llmFactory builds the LLM client from the llm section (default: OpenAI-compatible over HTTP)
+     */
     public function __construct(
         private readonly ScenarioLoader $loader = new ScenarioLoader(),
         private readonly ConfigLoader $configLoader = new ConfigLoader(),
-        private readonly ScenarioRunner $runner = new ScenarioRunner(),
+        ?Closure $llmFactory = null,
     ) {
+        $this->llmFactory = $llmFactory ?? static fn (LlmConfig $config): LlmClient => OpenAiCompatibleClient::fromConfig($config);
         parent::__construct();
     }
 
@@ -117,19 +131,49 @@ final class RunCommand extends Command
             }
         }
 
-        return $this->runAll($scenarios, new HttpAgentAdapter($config), $output);
+        $llm = null;
+        if ($config->llm !== null && self::needsLlm($scenarios)) {
+            try {
+                $llm = ($this->llmFactory)($config->llm);
+            } catch (LlmException $e) {
+                return $this->fail($output, $e->getMessage());
+            }
+        }
+
+        $runner = new ScenarioRunner(llm: $llm);
+
+        return $this->runAll($scenarios, $runner, new HttpAgentAdapter($config), $output);
     }
 
     /**
      * @param list<Scenario> $scenarios
      */
-    private function runAll(array $scenarios, AgentAdapter $agent, OutputInterface $output): int
+    private static function needsLlm(array $scenarios): bool
+    {
+        foreach ($scenarios as $scenario) {
+            if ($scenario->user->mode === UserMode::Llm) {
+                return true;
+            }
+            foreach ($scenario->expect as $expectation) {
+                if ($expectation->type === ExpectationType::Judge) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param list<Scenario> $scenarios
+     */
+    private function runAll(array $scenarios, ScenarioRunner $runner, AgentAdapter $agent, OutputInterface $output): int
     {
         $start = hrtime(true);
         $counts = array_fill_keys(array_map(static fn (ScenarioStatus $s): string => $s->value, ScenarioStatus::cases()), 0);
 
         foreach ($scenarios as $scenario) {
-            $result = $this->runner->run($scenario, $agent);
+            $result = $runner->run($scenario, $agent);
             $counts[$result->status->value]++;
             $this->print($result, $output);
         }
