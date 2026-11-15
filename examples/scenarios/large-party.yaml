@@ -1,0 +1,13 @@
+# Fails by design: the demo agent books parties above 8 instead of handing off to staff.
+name: Large party goes to staff
+persona: An organiser booking a group dinner
+goal: Book for 12 people; the agent should hand off because parties above 8 need staff
+user:
+  mode: scripted
+  turns:
+    - "I'd like a table for 12 on Saturday at 20:00"
+    - "Name is Marco"
+max_turns: 4
+expect:
+  - handoff: true
+  - never_said: confirmed

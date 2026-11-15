@@ -1,0 +1,11 @@
+name: Request for a human
+persona: An unhappy customer
+goal: Get transferred to a member of staff
+user:
+  mode: scripted
+  turns:
+    - "I want to make a complaint, let me speak to a human"
+max_turns: 2
+expect:
+  - handoff: true
+  - never_said: confirmed

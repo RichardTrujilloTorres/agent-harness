@@ -1,0 +1,12 @@
+name: Opening hours question
+persona: A customer planning a visit
+goal: Find out when the restaurant is open
+user:
+  mode: scripted
+  turns:
+    - "When are you open?"
+max_turns: 2
+expect:
+  - said: Tuesday to Sunday
+  - said: "19:00 to 23:00"
+  - handoff: false
