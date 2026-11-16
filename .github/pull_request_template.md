@@ -4,7 +4,8 @@
 
 ## Checklist
 
-- [ ] `composer check` passes locally (style, PHPStan, Rector, Psalm taint, dependencies, audit, coverage >= 95 %, type coverage 100 %, mutation score >= 85 %, demo run)
+- [ ] `composer check` passes locally (commits, style, PHPStan, dependencies, tests, schemas, docs lint and spelling)
+- [ ] CI is green: it runs the heavy gates of `composer check:ci` (Rector, Psalm taint, audit, coverage >= 95 %, type coverage 100 %, mutation score >= 85 %, demo run, PHAR, docs build)
 - [ ] Tests added or updated for every behaviour change; no test calls a real LLM
 - [ ] No ignore comments, baselines, suppressions, skipped tests or lowered thresholds
 - [ ] `README.md` and `CHANGELOG.md` (under Unreleased) updated if behaviour or options changed

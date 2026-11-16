@@ -52,7 +52,7 @@ A developer or a CI job runs `agent-harness run` (or a Pest test using `conversa
 | 21 | Demo agent: reflected text served as HTML | XSS if opened in a browser | Fixed | JSON with `<`, `>`, `&`, quotes escaped, `charset=utf-8` and `X-Content-Type-Options: nosniff` | `DemoAgentTest`: "escapes HTML characters in JSON and sends nosniff"; Psalm taint analysis |
 | 22 | Demo agent exposed on a network | Anyone can use it | Accepted | It is a local demo: README and the file header say to bind it to `127.0.0.1` only, and `composer demo` does | — |
 | 23 | Secrets committed to the repository | Credential leak | Mitigated | gitleaks over the full history in CI (`.github/workflows/security.yml`) | CI job |
-| 24 | Vulnerable dependency | Depends on the advisory | Mitigated | `composer deps:audit` locally (`composer check`) and in CI, weekly scheduled run, Dependabot | CI job |
+| 24 | Vulnerable dependency | Depends on the advisory | Mitigated | `composer deps:audit` locally and in CI (`composer check:ci`), weekly scheduled run, Dependabot | CI job |
 | 25 | Tainted data reaching a sink in the code (SQL, shell, HTML, file) | Injection | Mitigated | Psalm taint analysis on `src`, `bin` and the demo agent, with no suppressions | `composer taint`, CI job |
 | 26 | Agent misbehaviour inside the agent's own systems (it books, emails, deletes) | Side effects of testing | Accepted | The harness only sends the scripted or LLM-written messages; run it against a test deployment of the agent | — |
 

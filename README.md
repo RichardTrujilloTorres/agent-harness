@@ -426,13 +426,16 @@ See the [threat model](docs/security/threat-model.md) for each threat, mitigatio
 
 ```bash
 composer install
-composer check       # every local gate
+composer check       # fast local gate
+composer check:ci    # every gate, as CI runs them (heavy)
 composer demo        # start the demo agent
 composer phar        # build build/agent-harness.phar
 composer phar:check  # validate examples and run the demo with the PHAR
 ```
 
-`composer check` runs Pint, PHPStan at level max with strict rules, Rector, Psalm taint analysis, dependency and security checks, Pest, architecture and schema tests, all three coverage gates, the demo, and the PHAR smoke test. CI additionally tests PHP 8.3 and 8.4 with lowest and stable dependencies and includes security, SonarCloud, Scorecard and tag-release workflows.
+`composer check` is the local gate: commit messages, Pint, PHPStan at level max with strict rules, dependency checks, the Pest suite, schema tests, and markdownlint and cspell over the docs. It runs no coverage, mutation testing or builds.
+
+`composer check:ci` adds Rector, Psalm taint analysis, the dependency audit, architecture tests, all three coverage gates, the demo, the PHAR smoke test and the docs site build. It uses every CPU core for several minutes and is meant for CI, where the same gates run as separate jobs; the release workflow runs it in full. CI additionally tests PHP 8.3 and 8.4 with lowest and stable dependencies and includes security, SonarCloud, Scorecard and tag-release workflows.
 
 Measured in this hardening run: **336 tests and 1,168 assertions**, **95.3% line coverage**, **100.0% type coverage**, and **94.33% covered-only mutation score**. Pint, PHPStan, Rector and Psalm taint analysis all pass with no errors. These are measured results, not badges.
 

@@ -4,18 +4,25 @@ Thanks for helping. Issues and pull requests are welcome.
 
 ## Setup
 
-PHP 8.3 or later, Composer, and Xdebug or PCOV for the coverage gates.
+PHP 8.3 or later, Composer, and Node.js 20 or later with npm for the commit and documentation checks. Xdebug or PCOV is needed only for the coverage gates in `composer check:ci`.
 
 ```bash
 composer install
+npm ci
+npm --prefix docs ci
 composer check
 ```
+
+There are two entry points:
+
+- `composer check` is the fast local gate: commit messages, Pint, PHPStan, dependency checks, the Pest suite, schema checks, and markdownlint and cspell over the docs. It runs no coverage, mutation testing or builds. Run it before every push.
+- `composer check:ci` runs every gate: `composer check` plus Rector, Psalm taint analysis, the dependency audit, architecture tests, line coverage (at least 95 %), type coverage (100 %), covered-only mutation testing (at least 85 %), the demo run, the PHAR build and smoke test, and the docs site build with the docs tests. It is heavy: it uses every CPU core for several minutes. CI runs these gates as separate jobs on every push and pull request, and the release workflow runs `composer check:ci`. Run it locally only before a release, if at all.
 
 The same gates are available individually as Composer scripts and as `make` targets. Run `composer list` to see the commands and their descriptions. `composer lint:fix` applies the code style; `composer rector` must remain a no-change dry run.
 
 ## Before opening a pull request
 
-- Run `composer check`: Pint, PHPStan at level max with strict rules, Rector, Psalm taint analysis, dependency checks and audit, Pest, architecture tests, line and type coverage, covered-only mutation testing, schema checks, the demo run, and the PHAR smoke test must all pass.
+- Run `composer check`; it must pass. CI then runs the heavy gates of `composer check:ci`, and they must pass too. To run one heavy gate locally, use its own script, for example `composer coverage` or `composer mutate`.
 - Add or update tests for every behaviour change. Tests never call a real LLM: use `tests/Support/FakeLlmClient.php`.
 - Do not add PHPStan or Psalm baselines, ignore comments, suppressions, skipped tests, or lower a quality threshold. Fix the code or improve the tests.
 - Keep the example run at 4 passed and 2 failed. `composer demo:check` verifies the counts and the expected exit code 1.

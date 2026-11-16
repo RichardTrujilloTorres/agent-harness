@@ -52,4 +52,4 @@ npm ci
 composer commits
 ```
 
-`npm ci` installs commitlint from the lockfile at the repository root. `composer commits` then lints every commit from the first one to `HEAD`. It is part of `composer check`, and the `commits` job in `.github/workflows/ci.yml` runs it on every push and pull request.
+`npm ci` installs commitlint from the lockfile at the repository root. `composer commits` then lints every commit from the first one to `HEAD`. It is part of `composer check` and `composer check:ci`, and the `commits` job in `.github/workflows/ci.yml` runs it on every push and pull request.
