@@ -1,5 +1,5 @@
 # Mirrors the composer scripts; run "composer list" for the descriptions.
-.PHONY: install commits lint lint-fix stan rector taint test coverage types mutate arch schema deps-audit deps demo demo-check phar phar-check check
+.PHONY: install commits lint lint-fix stan rector taint test coverage types mutate arch schema deps-audit deps demo demo-check phar phar-check check check-ci docs-lint docs-check
 
 install:
 	composer install
@@ -58,5 +58,16 @@ phar:
 phar-check:
 	composer phar:check
 
+# Fast local gate.
 check:
 	composer check
+
+# Every gate, as CI runs them. Heavy: uses every CPU core for several minutes.
+check-ci:
+	composer check:ci
+
+docs-lint:
+	composer docs:lint
+
+docs-check:
+	composer docs:check
