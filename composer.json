@@ -120,6 +120,7 @@
             "npm --prefix docs run lint",
             "npm --prefix docs run spell"
         ],
+        "docs:pdf": "npm --prefix docs run pdf",
         "lint": "pint --test",
         "lint:fix": "pint",
         "mutate": [
@@ -151,6 +152,7 @@
         "deps:audit": "Check dependencies for security advisories and abandoned packages",
         "docs:check": "Docs site: build with no warnings or dead links, markdownlint, cspell, docs tests",
         "docs:lint": "Docs markdownlint and cspell (no build)",
+        "docs:pdf": "Build build/agent-harness-docs.pdf from the docs",
         "lint": "Check code style with Pint",
         "lint:fix": "Fix code style with Pint",
         "mutate": "Mutation testing, covered mutation score at least 85 %",

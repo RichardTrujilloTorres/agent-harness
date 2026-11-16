@@ -8,7 +8,8 @@
     "lint": "markdownlint-cli2",
     "spell": "cspell --no-progress \"**/*.md\"",
     "links": "node scripts/check-links.mjs",
-    "check": "npm run build:strict && npm run lint && npm run spell"
+    "check": "npm run build:strict && npm run lint && npm run spell",
+    "pdf": "npm run build:strict && node scripts/build-pdf.mjs"
   },
   "devDependencies": {
     "cspell": "10.5.1",

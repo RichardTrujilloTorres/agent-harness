@@ -1,5 +1,5 @@
 # Mirrors the composer scripts; run "composer list" for the descriptions.
-.PHONY: install commits lint lint-fix stan rector taint test coverage types mutate arch schema deps-audit deps demo demo-check phar phar-check check check-ci docs-lint docs-check
+.PHONY: install commits lint lint-fix stan rector taint test coverage types mutate arch schema deps-audit deps demo demo-check phar phar-check check check-ci docs-lint docs-check docs-pdf
 
 install:
 	composer install
@@ -71,3 +71,6 @@ docs-lint:
 
 docs-check:
 	composer docs:check
+
+docs-pdf:
+	composer docs:pdf
