@@ -9,7 +9,7 @@ A developer or a CI job runs `agent-harness run` (or a Pest test using `conversa
 ## Assets
 
 | Asset | Why it matters |
-|---|---|
+| --- | --- |
 | LLM API key | Read from the environment variable named in `llm.api_key_env`. Leaking it costs money and access. |
 | Configured agent headers (`agent.headers`) | Often carry API keys or session tokens for the agent under test. Every header value is treated as a secret. |
 | Integrity of the verdict | A test run must not pass because the system under test asked it to. |
@@ -19,7 +19,7 @@ A developer or a CI job runs `agent-harness run` (or a Pest test using `conversa
 ## Trust boundaries
 
 | Source | Trust | Notes |
-|---|---|---|
+| --- | --- | --- |
 | Scenario files (`*.yaml`) | Trusted author | Written by the person who runs the tests. Still parsed defensively: no PHP tags, size, depth and node caps. |
 | `harness.yaml`, CLI options, environment | Trusted | Chosen by the person who runs the tests. |
 | The agent under test (HTTP responses) | **Untrusted** | The whole point is to test it; it may be buggy, compromised or hostile. |
@@ -28,7 +28,7 @@ A developer or a CI job runs `agent-harness run` (or a Pest test using `conversa
 ## Threats
 
 | # | Threat | Impact | Status | Where in code | Test |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | 1 | Agent reply tells the LLM judge to ignore its instructions and answer `pass: true` | False pass | Mitigated | `src/Assertion/JudgeEvaluator.php`: system prompt marks the transcript as untrusted data; rubric stays in the system message; transcript between `<<<TRANSCRIPT nonce>>>` markers with a fresh random nonce per request | `tests/Unit/Security/JudgeInjectionTest.php`: "tells the judge that the transcript is untrusted data…", "keeps the rubric in the system message…", "uses a new random nonce for every judge request…" |
 | 2 | Agent reply closes the transcript block early and adds fake instructions | False pass | Fixed | `JudgeEvaluator::neutralise()`: removes the nonce (any case) and collapses `<<<`/`>>>` runs in all untrusted text, tool arguments included | `JudgeInjectionTest`: "neutralises the nonce and the markers…" |
 | 3 | Judge answer is loosely parsed (prose, code fences, extra keys) and an injected fragment is taken as the verdict | False pass | Fixed | `JudgeEvaluator::verdict()`: only a JSON object with exactly a boolean `pass` and a non-empty string `reason`; anything else is retried once, then an error (never a pass) | `JudgeInjectionTest`: "accepts only an object with exactly…", "errors instead of passing when the judge echoes injected text" |

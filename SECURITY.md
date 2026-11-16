@@ -9,7 +9,7 @@ Include what you found, how to reproduce it (a scenario file, a config and the a
 ## Supported versions
 
 | Version | Supported |
-|---|---|
+| --- | --- |
 | 0.1.x (latest) | Yes |
 | Older | No |
 

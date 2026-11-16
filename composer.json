@@ -87,7 +87,8 @@
             "@schema",
             "@demo:check",
             "@phar",
-            "@phar:check"
+            "@phar:check",
+            "@docs:check"
         ],
         "commits": "bash scripts/commits",
         "coverage": [
@@ -106,6 +107,14 @@
             "composer-require-checker check --config-file=composer-require-checker.json composer.json"
         ],
         "deps:audit": "bash scripts/audit",
+        "docs:check": [
+            "npm --prefix docs run check",
+            "pest tests/Docs"
+        ],
+        "docs:lint": [
+            "npm --prefix docs run lint",
+            "npm --prefix docs run spell"
+        ],
         "lint": "pint --test",
         "lint:fix": "pint",
         "mutate": [
@@ -134,6 +143,8 @@
         "demo:check": "Run the examples against the demo agent: 4 passed, 2 failed, exit 1",
         "deps": "composer.json valid and normalized, no unused or undeclared dependencies",
         "deps:audit": "Check dependencies for security advisories and abandoned packages",
+        "docs:check": "Docs site: build with no warnings or dead links, markdownlint, cspell, docs tests",
+        "docs:lint": "Docs markdownlint and cspell (no build)",
         "lint": "Check code style with Pint",
         "lint:fix": "Fix code style with Pint",
         "mutate": "Mutation testing, covered mutation score at least 85 %",

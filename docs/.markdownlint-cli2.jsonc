@@ -1,0 +1,14 @@
+// markdownlint configuration for the documentation site.
+{
+  "config": {
+    "default": true,
+    // Paragraphs are written one per line; long lines are expected in prose and tables.
+    "MD013": false,
+    // The run-lifecycle diagram on concepts/how-it-works.md is inline SVG, so the PDF and the site need no image files.
+    "MD033": {
+      "allowed_elements": ["figure", "figcaption", "svg", "title", "desc", "defs", "marker", "path", "g", "rect", "text", "line", "code"]
+    }
+  },
+  "globs": ["**/*.md"],
+  "ignores": ["node_modules/**", ".vitepress/cache/**", ".vitepress/dist/**"]
+}

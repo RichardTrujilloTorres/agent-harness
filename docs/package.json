@@ -3,9 +3,18 @@
   "scripts": {
     "dev": "vitepress",
     "build": "vitepress build",
-    "preview": "vitepress preview"
+    "preview": "vitepress preview",
+    "build:strict": "node scripts/build-strict.mjs",
+    "lint": "markdownlint-cli2",
+    "spell": "cspell --no-progress \"**/*.md\"",
+    "links": "node scripts/check-links.mjs",
+    "check": "npm run build:strict && npm run lint && npm run spell"
   },
   "devDependencies": {
+    "cspell": "10.5.1",
+    "markdownlint-cli2": "0.24.1",
+    "pdfjs-dist": "6.5.438",
+    "playwright": "1.65.1",
     "vitepress": "1.6.4"
   }
 }

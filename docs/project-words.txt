@@ -1,0 +1,25 @@
+# Project dictionary for cspell. One word per line.
+
+# Names of tools, packages and settings
+Desemax
+mbstring
+nosniff
+Packagist
+PCOV
+pestphp
+PHAR
+shivammathur
+Symfony
+
+# Domain words
+chatbots
+coeliac
+coeliacs
+
+# Deliberate misspellings and cut words in real error output shown in the docs
+contactin
+nmae
+scenaros
+timout
+toolcalled
+turday
