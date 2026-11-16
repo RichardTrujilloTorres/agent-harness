@@ -204,3 +204,23 @@ jobs:
       - run: composer phar
       - name: The PHAR validates the examples and runs the demo
         run: composer phar:check
+
+  docs:
+    name: Docs gates (build, markdownlint, cspell, docs tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.3'
+          coverage: none
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+      - run: composer install --no-progress --prefer-dist
+      - run: npm --prefix docs ci
+      - run: composer docs:check
